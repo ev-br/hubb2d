@@ -1,0 +1,7 @@
+gfortran -ffree-form -ffree-line-length-none -fimplicit-none -fbounds-check -g3 -fbacktrace _rndm_mumbers.f mrg_gf_2d_nov27_13.f90 -o mrg_2d -llapack -framework vecLib
+
+
+rm *.o
+rm *.mod
+ls -l mrg_2d
+

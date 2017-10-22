@@ -1,0 +1,7 @@
+gfortran -ffree-form -ffree-line-length-none -fimplicit-none -fbounds-check -g3 -fbacktrace det_n2___.f _rndm_mumbers.f mf_cmd_phi_gf_oct21_2013_2D.f  -o hub_gf_2d_run -llapack -framework vecLib
+
+
+rm *.o
+rm *.mod
+ls -l hub_gf_2d_run
+
