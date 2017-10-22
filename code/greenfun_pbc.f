@@ -108,6 +108,8 @@
 
 ! Green functions
 	ntab=maxval(N(:)/2+1)                          ! the longest jump w/PBC is N/2
+    if(allocated(GR_DAT))deallocate(GR_DAT)
+    if(allocated(GRD_DAT))deallocate(GRD_DAT)
 	allocate( GR_DAT(0:mt_max+1, 0:ntab-1, 0:ntab-1) )
 	allocate( GRD_DAT(0:mt_max+1, 0:ntab-1, 0:ntab-1) )
 
