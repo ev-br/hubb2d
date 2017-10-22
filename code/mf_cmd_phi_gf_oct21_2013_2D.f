@@ -44,19 +44,6 @@ integer :: ro, co
 !------------------------------------------------------
 !     Phys. parameters
 !------------------------------------------------------
-
-    !  integer, parameter :: d=3, dd=6       ! d is the global dimension; 
-	integer :: d, dd
-	                                      ! if you need d/=3, change it in here and in the parameter file  
-										  ! It is essential for performance reasons to have the 
-										  ! dimension as a static variable (othewise some functions 
-										  ! can't be inlined etc)
-        !integer :: N(1:d)     ! Array for Numbers of sites per dimensions
-        !integer :: N2(1:d)
-
-        integer, allocatable :: N(:), N2(:)
-        integer :: Nsite      ! Total number of sites
-
 	real*8 :: U, U_in    ! MINUS interaction strength, initial for thermalization
 	real*8 :: beta       ! inverse temperature
 	real*8 :: beta_ini   ! start thermalization with this \beta
@@ -84,38 +71,6 @@ integer :: ro, co
 	real*8 :: alpha         ! Rubtsov's alpha
 
       real*8, allocatable :: phi(:)   ! BC twist
-
-
-!------------------------------------------------------
-!     Sites and Associations
-!------------------------------------------------------
-
-      integer, allocatable :: ass(:,:)
-      integer, allocatable :: back(:)
-      integer, allocatable :: x(:,:)  ! coordinates x(1:d,site)
-
-
-!     The array ass(...) specifies the nearest-neighbor sites in both positive and
-!     negative i-direction. For example, in a 2-D lattice, like the one below,
-!     the associations to the io site are:  
-!     (here +(-)1 = positive (negative) x-direction, 
-!     +(-)2 = positive (negative) y-direction)
-      
-!     ass(+1,i0)=i1;    ass(-1,i0)=i3;    ass(+2,i0)=i4;    ass(-2,i0)=i2
-      
-!                            ...    
-!                             |  
-!                     ... -- i2 -- ...
-!                       |     |     |
-!                ...-- i3 -- i0 -- i1 --.... 
-!                       |     |     |
-!                     ... -- i4 -- ... 
-!                             |  
-!                            ...
-!           
-!     * The array back(..) specifies the 'opposite direction', e.g. in 3D
-!           back(1) = 4, back(4)=1 (positive x is 1, negative x is 4), and so forth
-! 
 
 
 !------------------------------------------------------
@@ -370,6 +325,7 @@ integer :: ro, co
 	program MAIN
 	use vrbls; use det_n2
 	use mumbers; !use tree
+    use lattice
 	implicit none 
 
 	logical :: acpt                   ! accepted update flag
@@ -403,21 +359,19 @@ integer :: ro, co
 	open(OUT_UNIT,file=outputfname,position='append')      ! to be open until the MC starts
 	write(OUT_UNIT,*) ' reading ', myparfname,' ...'
 
-      open( 1, file=trim(myparfname) )
-      
-    !  read(1,*) ddd        ! Global dimension
-	read(1,*)d
-	    dd = 2*d
-! 	if(3/=d)then; print*,'d/=3'; call mystop; endif
+    open( 1, file=trim(myparfname) )
 
-	allocate( N(1:d), N2(1:d) )
-      Nsite=1
-      do i=1,d 
-         read(1,*) N(i)  ! Number of sites per given dimension
-         Nsite=Nsite*N(i)
-	   N2(i)=N(i)/2
-      end do
-      
+    read(1,*)d
+    dd = 2*d
+
+    allocate( N(1:d), N2(1:d) )
+    Nsite=1
+    do i=1,d 
+        read(1,*) N(i)  ! Number of sites per given dimension
+        Nsite=Nsite*N(i)
+        N2(i)=N(i)/2
+    end do
+
 	read(1,*) ans1  ! 0 if new configuration, 1 if old one
 	read(1,*) ans2  ! 0 if new statistics,    1 if old one
 	read(1,*) ans3  ! 0 if new rndm() seed, 1 if read one
@@ -541,14 +495,11 @@ integer :: ro, co
 
 !--- Tabulate Green functions
 	write(OUT_UNIT,*)'tabulating GFs...'  
-!	Ntab=maxval(N(:)/2+1)                          ! the longest jump w/PBC is N/2
-!	if(ntab>ntab_max)then; write(OUT_UNIT,*)'Ntab_max is too small'; 
-!	call mystop; endif
 	if(mtau>mt_max)then; write(OUT_UNIT,*)'mt_max is too small'; 
 	call mystop; endif
 
 	print*,' regular tabulate'
-	call TABULATE 
+	call TABULATE
 	write(OUT_UNIT,*)'...done'
 
 
@@ -3135,57 +3086,6 @@ integer :: ro, co
 	end function recalc_matrix
 
 
-!--------------------------------------------
-!--- Arranges associations between sites
-!--------------------------------------------
-      subroutine ASSA  
- 
-      integer :: site, site1, i, i1, i2 !, i3 
-      integer :: ic(d), NN(d+1) 
-!     ic(i) is the i-coordinate of a site, 
-!     the relation between site indexes and coordinates reads:
-!     site = 1 + (ic(1)-1) + N(1)*(ic(2)-1) +...
-!               + N(1)*...*N(d-1)*(ic(d)-1)
-
-      NN(1)=1; do i=2,d+1; NN(i)=NN(i-1)*N(i-1); enddo
-       
-      do i=1,d; back(i)=i+d; back(i+d)=i; enddo 
-      
-      ic=1; ic(1)=0
-      DO site=1, Nsite
-
-!------------ Coordinates for site ----------
-         i1=1 
-         DO
-         if (ic(i1) < N(i1)) then
-            ic(i1)=ic(i1)+1
-            DO i2=1,i1-1; ic(i2)=1; END DO
-            EXIT
-         else; i1=i1+1;  end if 
-
-         END DO
-
-!-------------------------------------------------------
-
-
-         DO i=1, d
-            if (ic(i) < N(i)) then
-               site1=site+NN(i)
-            else
-               site1=site+NN(i)-NN(i+1)
-            end if
-
-            ass(i,site)=site1
-            ass(back(i),site1)=site
-	      x(:,site)=ic(:)
-                 
-         END DO
-      END DO
-      
-      end subroutine ASSA
-
-
-
 
 
 !----------------------
@@ -3332,7 +3232,7 @@ integer :: ro, co
 	  bun = beta*U*Nsite	  
 
 !	   print*,'calling tabulate @ j = ', j, 'out of ', howmanytimes
-	  call tabulate                     ! GFs
+	  call tabulate
 
 	  det = recalc_matrix(pm,lda,matr) 
 
