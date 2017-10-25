@@ -5,7 +5,7 @@ LIBS = -llapack -lblas
 FILES = det_n2___.f _rndm_mumbers.f mf_cmd_phi_gf_oct21_2013_2D.f
 
 pbc: $(FILES)
-	$(FF) $(FFLAGS) $(FILES) -o hub_gf_2d_run $(LIBS)
+	$(FF) $(FFLAGS) $(FILES) -o hub_gf_2d_run_1 $(LIBS)
 
 clean:
 	#rm *.o

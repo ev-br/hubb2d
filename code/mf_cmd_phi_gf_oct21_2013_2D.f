@@ -75,12 +75,7 @@ integer :: ro, co
 !	integer, parameter :: ntab_max=14 ! Max. number of of sites per dimension for tabulation
 	integer :: ntab                   ! Actual Number of sites per dimension for tabulation
 	integer :: mtau
-!	real*8 :: GR_DAT(0:mt_max+1,0:ntab_max-1,0:ntab_max-1,       
-!     * 0:ntab_max-1)											! Green function array
-!	real*8 :: GRD_DAT(0:mt_max+1,0:ntab_max-1,0:ntab_max-1,
-!     * 0:ntab_max-1)											! Green function derivative
- 
-	real*8, allocatable :: GR_DAT(:,:,:), GRD_DAT(:,:,:)
+	real*8, allocatable :: GR_DAT(:,:,:), GRD_DAT(:,:,:) ! Green function & derivative arrays
 
 	real*8 :: bmt, bmt1     ! a shorthand for beta/mtau, and its inverse
 
@@ -505,8 +500,8 @@ integer :: ro, co
 
 ! Green functions
 	ntab=maxval(N(:)/2+1)                          ! the longest jump w/PBC is N/2
-	allocate( GR_DAT(0:mt_max+1, 0:ntab-1,0:ntab-1) )
-	allocate( GRD_DAT(0:mt_max+1, 0:ntab-1,0:ntab-1) )
+	allocate( GR_DAT(0:mt_max+1, 1:Nsite, 1:Nsite) )
+	allocate( GRD_DAT(0:mt_max+1, 1:Nsite, 1:Nsite) )
 
 !--- Lattice
 	allocate (ass(dd,Nsite),back(dd),x(1:d,1:Nsite))
@@ -752,8 +747,8 @@ integer :: ro, co
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
 	   xv=x(:,ksite(vova)); tv=ktau(vova)
-	   m_v(clmn(vova)) = GREENFUN(xv,tv,xnew,tnew)
-	   m_u(row(vova))  = GREENFUN(xnew,tnew,xv,tv)
+	   m_v(clmn(vova)) = GREENFUN(ksite(vova), tv, site, tnew)
+	   m_u(row(vova))  = GREENFUN(site, tnew, ksite(vova), tv)
 	enddo
 	m_s = g0000-alpha
 	det = det_p1(pm,lda,matr,m_u,m_v,m_z,m_s)   ! det ratio itself
@@ -875,8 +870,8 @@ integer :: ro, co
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
 	   xv=x(:,ksite(vova)); tv=ktau(vova)
-	   m_v(clmn(vova)) = GREENFUN(xv,tv,xnew,tnew)
-	   m_u(row(vova))  = GREENFUN(xnew,tnew,xv,tv)
+	   m_v(clmn(vova)) = GREENFUN(ksite(vova), tv, site, tnew)
+	   m_u(row(vova))  = GREENFUN(site, tnew, ksite(vova), tv)
 	enddo
 	m_s = g0000-alpha
 	det = det_p1(pm,lda,matr,m_u,m_v,m_z,m_s)   ! det ratio itself
@@ -953,7 +948,7 @@ integer :: ro, co
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio
-	integer :: name, name2, site,j,nk, xnew(d), xv(d),vova
+	integer :: name, name2, site,j,nk, xnew(d), xv(d),vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	real*8 :: det1,det2
@@ -998,19 +993,19 @@ integer :: ro, co
 
 !------------- determinant   
 	m_s2(1,1) = g0000-alpha; m_s2(2,2)=g0000-alpha;
-	m_s2(1,2) = GREENFUN(xnew,tnew,xnew,tnew2)
-	m_s2(2,1) = GREENFUN(xnew,tnew2,xnew,tnew)
+	m_s2(1,2) = GREENFUN(site, tnew, site,tnew2)
+	m_s2(2,1) = GREENFUN(site, tnew2, site, tnew)
 	temp2x2=m_s2
 
 	if(pm==0)then; det=full_inv(2,2,temp2x2)   !m_s2(1,1)*m_s2(2,2)-m_s2(1,2)*m_s2(2,1)
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova)
-	   m_v2(clmn(vova),1) = GREENFUN(xv,tv,xnew,tnew2)
-	   m_v2(clmn(vova),2) = GREENFUN(xv,tv,xnew,tnew)
-	   m_u2(row(vova),1)  = GREENFUN(xnew,tnew2,xv,tv)
-	   m_u2(row(vova),2)  = GREENFUN(xnew,tnew,xv,tv)
+	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	   m_v2(clmn(vova),1) = GREENFUN(sv, tv, site, tnew2)
+	   m_v2(clmn(vova),2) = GREENFUN(sv, tv, site, tnew)
+	   m_u2(row(vova),1)  = GREENFUN(site, tnew2, sv, tv)
+	   m_u2(row(vova),2)  = GREENFUN(site, tnew, sv,tv)
 	enddo
 
 	det = det_p2_(pm,lda,matr,m_u2,m_v2,m_s2,m_z2)   ! det ratio itself
@@ -1082,7 +1077,7 @@ integer :: ro, co
 	subroutine try_add2_same(site,tnew,tnew2,ratio_)
 
 	real*8  :: ratio, ratio_
-	integer :: name, name2, site,j,nk, xnew(d), xv(d),vova
+	integer :: name, name2, site,j,nk, xnew(d), xv(d),vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2), bu
 
 	if(pm==lda)then; call resize_matrix(-1); endif
@@ -1092,19 +1087,19 @@ integer :: ro, co
 
 !------------- determinant   
 	m_s2(1,1) = g0000-alpha; m_s2(2,2)=g0000-alpha;
-	m_s2(1,2) = GREENFUN(xnew,tnew,xnew,tnew2)
-	m_s2(2,1) = GREENFUN(xnew,tnew2,xnew,tnew)
+	m_s2(1,2) = GREENFUN(site, tnew, site, tnew2)
+	m_s2(2,1) = GREENFUN(site, tnew2, site, tnew)
 	temp2x2=m_s2
 
 	if(pm==0)then; det=full_inv(2,2,temp2x2)   !m_s2(1,1)*m_s2(2,2)-m_s2(1,2)*m_s2(2,1)
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova)
-	   m_v2(clmn(vova),1) = GREENFUN(xv,tv,xnew,tnew2)
-	   m_v2(clmn(vova),2) = GREENFUN(xv,tv,xnew,tnew)
-	   m_u2(row(vova),1)  = GREENFUN(xnew,tnew2,xv,tv)
-	   m_u2(row(vova),2)  = GREENFUN(xnew,tnew,xv,tv)
+	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	   m_v2(clmn(vova),1) = GREENFUN(sv,tv, site, tnew2)
+	   m_v2(clmn(vova),2) = GREENFUN(sv,tv, site, tnew)
+	   m_u2(row(vova),1)  = GREENFUN(site ,tnew2, sv, tv)
+	   m_u2(row(vova),2)  = GREENFUN(site ,tnew, sv, tv)
 	enddo
 
 	det = det_p2_(pm,lda,matr,m_u2,m_v2,m_s2,m_z2)   ! det ratio itself
@@ -1294,7 +1289,7 @@ integer :: ro, co
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio
-	integer :: name, name2, site,site2,j,nk, xnew(d),xnew2(d), xv(d),vova
+	integer :: name, name2, site,site2,j,nk, xnew(d),xnew2(d), xv(d),vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	real*8 :: det1,det2
@@ -1331,19 +1326,19 @@ integer :: ro, co
 
 !------------- determinant   
 	m_s2(1,1) = g0000-alpha; m_s2(2,2)=g0000-alpha;
-	m_s2(1,2) = GREENFUN(xnew,tnew,xnew2,tnew2)
-	m_s2(2,1) = GREENFUN(xnew2,tnew2,xnew,tnew)
+	m_s2(1,2) = GREENFUN(site, tnew, site2, tnew2)
+	m_s2(2,1) = GREENFUN(site2, tnew2, site, tnew)
 	temp2x2=m_s2
 
 	if(pm==0)then; det=full_inv(2,2,temp2x2)   !m_s2(1,1)*m_s2(2,2)-m_s2(1,2)*m_s2(2,1)
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova)
-	   m_v2(clmn(vova),1) = GREENFUN(xv,tv,xnew2,tnew2)
-	   m_v2(clmn(vova),2) = GREENFUN(xv,tv,xnew,tnew)
-	   m_u2(row(vova),1)  = GREENFUN(xnew2,tnew2,xv,tv)
-	   m_u2(row(vova),2)  = GREENFUN(xnew,tnew,xv,tv)
+	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	   m_v2(clmn(vova),1) = GREENFUN(sv, tv, site2, tnew2)
+	   m_v2(clmn(vova),2) = GREENFUN(sv, tv, site, tnew)
+	   m_u2(row(vova),1)  = GREENFUN(site2, tnew2, sv, tv)
+	   m_u2(row(vova),2)  = GREENFUN(site, tnew, sv, tv)
 	enddo
 
 	det = det_p2_(pm,lda,matr,m_u2,m_v2,m_s2,m_z2)   ! det ratio itself
@@ -1574,7 +1569,7 @@ integer :: ro, co
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio, ratio_
-	integer :: name, name2, site,site2,j,nk, xnew(d),xnew2(d), xv(d),vova
+	integer :: name, name2, site,site2,j,nk, xnew(d),xnew2(d), xv(d),vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	real*8 :: det1,det2
@@ -1590,19 +1585,19 @@ integer :: ro, co
 
 !------------- determinant   
 	m_s2(1,1) = g0000-alpha; m_s2(2,2)=g0000-alpha;
-	m_s2(1,2) = GREENFUN(xnew,tnew,xnew2,tnew2)
-	m_s2(2,1) = GREENFUN(xnew2,tnew2,xnew,tnew)
+	m_s2(1,2) = GREENFUN(site, tnew, site2, tnew2)
+	m_s2(2,1) = GREENFUN(site2, tnew2, site, tnew)
 	temp2x2=m_s2
 
 	if(pm==0)then; det=full_inv(2,2,temp2x2)   !m_s2(1,1)*m_s2(2,2)-m_s2(1,2)*m_s2(2,1)
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova)
-	   m_v2(clmn(vova),1) = GREENFUN(xv,tv,xnew2,tnew2)
-	   m_v2(clmn(vova),2) = GREENFUN(xv,tv,xnew,tnew)
-	   m_u2(row(vova),1)  = GREENFUN(xnew2,tnew2,xv,tv)
-	   m_u2(row(vova),2)  = GREENFUN(xnew,tnew,xv,tv)
+	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	   m_v2(clmn(vova),1) = GREENFUN(sv, tv, site2, tnew2)
+	   m_v2(clmn(vova),2) = GREENFUN(sv, tv, site, tnew)
+	   m_u2(row(vova),1)  = GREENFUN(site2, tnew2, sv, tv)
+	   m_u2(row(vova),2)  = GREENFUN(site, tnew, sv, tv)
 	enddo
 
 	det = det_p2_(pm,lda,matr,m_u2,m_v2,m_s2,m_z2)   ! det ratio itself
@@ -1764,7 +1759,7 @@ integer :: ro, co
 	real*8 function diag_dens()
 
 	real*8 :: det,ti, tn
-	integer :: site, xn(d), xi(d), j, vova 
+	integer :: site, xn(d), xi(d), j, vova, sv
 
 ! select where to insert a kink
 	site=Nsite*rndm()+1.d0; if(site>Nsite)site=Nsite
@@ -1775,13 +1770,13 @@ integer :: ro, co
 	else
 
 	  do j=1,pm; vova=nm_row(j)               ! fill a column
-	     xi=x(:,ksite(vova)); ti=ktau(vova)
-	     m_u(j)  = GREENFUN(xn,tn,xi,ti)
+	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     m_u(j)  = GREENFUN(site, tn, sv, ti)
 	  enddo
 
 	  do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	     xi=x(:,ksite(vova)); ti=ktau(vova)
-	     m_v(j) = GREENFUN(xi,ti,xn,tn)
+	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     m_v(j) = GREENFUN(sv, ti, site, tn)
 	  enddo
 
 	  m_s = g0000-alpha
@@ -1803,31 +1798,31 @@ integer :: ro, co
 	subroutine measure_GF()
 
 	real*8 :: det,ti, t1, t2, xi_k, phase
-	integer :: site, x1(d), x2(d), xi(d), j, vova
+	integer :: site1, site2, x1(d), x2(d), xi(d), j, vova, sv
 	integer :: k, i1,i2
 
 ! select where to insert the kinks
-	site=Nsite*rndm()+1.d0; if(site>Nsite)site=Nsite
-	x1(:)=x(:,site); t1=beta*rndm()
+	site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite
+	x1(:)=x(:,site1); t1=beta*rndm()
 	
-	site=Nsite*rndm()+1.d0; if(site>Nsite)site=Nsite
-	x2(:)=x(:,site); t2=beta*rndm()
+	site2=Nsite*rndm()+1.d0; if(site2>Nsite)site2=Nsite
+	x2(:)=x(:,site2); t2=beta*rndm()
 	
 !------------- determinant
-	if(nmnm==0)then; det=GREENFUN(x1,t1,x2,t2)  
+	if(nmnm==0)then; det=GREENFUN(site1, t1, site2, t2)  
 	else
 
 	  do j=1,pm; vova=nm_row(j)               ! fill a column
-	     xi=x(:,ksite(vova)); ti=ktau(vova)
-	     m_u(j)  = GREENFUN(x1,t1,xi,ti)
+	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     m_u(j)  = GREENFUN(site1, t1, sv, ti)
 	  enddo
 
 	  do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	     xi=x(:,ksite(vova)); ti=ktau(vova)
-	     m_v(j) = GREENFUN(xi,ti,x2,t2)
+	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     m_v(j) = GREENFUN(sv, ti, site2, t2)
 	  enddo
 
-	  m_s = GREENFUN(x1,t1,x2,t2)
+	  m_s = GREENFUN(site1, t1, site2, t2)
 
 	  det = det_p1(pm,lda,matr,m_u,m_v,m_z,m_s)   ! det ratio itself
 
@@ -1856,7 +1851,7 @@ integer :: ro, co
 !-----------------------------------------------
 	real*8 function diag_KE()
 
-	integer :: site1, site2, x1(d),x2(d), vova, xv(d), j, i
+	integer :: site1, site2, x1(d),x2(d), vova, xv(d), j, i, sv
 	real*8  :: t, det,tv
 !
 !  This estmator is for the tight-binding dispersion ONLY (n.n. sites)
@@ -1870,19 +1865,19 @@ integer :: ro, co
 	
 
 !------------- determinant
-	m_s = GREENFUN(x2,t,x1,t)        ! a corner 
+	m_s = GREENFUN(site2, t, site1, t)        ! a corner 
 
 	if(pm==0) then; det = m_s        
 	else
 
 	  do j=1,pm; vova=nm_row(j)               ! fill a column
-	     xv=x(:,ksite(vova)); tv=ktau(vova)
-	     m_u(j)  = GREENFUN(x2,t,xv,tv)
+	     xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	     m_u(j)  = GREENFUN(site2, t, sv, tv)
 	  enddo
 
 	  do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	     xv=x(:,ksite(vova)); tv=ktau(vova)
-	     m_v(j) = GREENFUN(xv,tv,x1,t)
+	     xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	     m_v(j) = GREENFUN(sv, tv, site1, t)
 	  enddo
 
 	  det = det_p1(pm,lda,matr,m_u,m_v,m_z,m_s)   ! det ratio itself
@@ -1990,7 +1985,7 @@ integer :: ro, co
 	real*8 :: this_PE, g_uu0   ! sent through from measure()
 
 	real*8  :: det2, this_uu, this_ud,t0, t1, tv
-	integer :: j, i,k, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova
+	integer :: j, i,k, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova, sv
 
 	if(d .ne. 2) then 
 		print*, ' Dens-dens correlator ERROR: this one only works in 2D !!'
@@ -2020,14 +2015,14 @@ integer :: ro, co
 ! **** Get the second determinant ************************
 	    ! row
 	    do j=1,pm; vova=nm_clmn(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova)
-	       m_v(j) = GREENFUN(xv,tv,x2,t0) - GREENFUN(xv,tv,x1,t0)
+	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       m_v(j) = GREENFUN(sv, tv, site2, t0) - GREENFUN(sv, tv, site1, t0)
 	    enddo
 
 	    ! column
 	    do j=1,pm; vova=nm_row(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova)
-	       m_z(j) = GREENFUN(x2,t0,xv,tv) - GREENFUN(x1,t0,xv,tv)
+	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       m_z(j) = GREENFUN(site2, t0, sv, tv) - GREENFUN(site1, t0, sv, tv)
 	    enddo
 
 	    det2 = det_rc(pm,lda,matr,r,m_v,c,m_z,m_w)
@@ -2076,34 +2071,34 @@ integer :: ro, co
       	   k=abs(x2(2)-x1(2)) !!! ; k=min(k,N(2)-k)
 
 	   !--- determinantz
-	   m_s2(1,1)=g0000-alpha; m_s2(1,2)=GREENFUN(x2,t1,x1,t1)
-	   m_s2(2,2)=g0000-alpha; m_s2(2,1)=GREENFUN(x1,t1,x2,t1)
+	   m_s2(1,1)=g0000-alpha; m_s2(1,2)=GREENFUN(site2, t1, site1, t1)
+	   m_s2(2,2)=g0000-alpha; m_s2(2,1)=GREENFUN(site1, t1, site2, t1)
 	   if(pm==0)then;  
 		det = (g0000-alpha)**2 - m_s2(1,2)*m_s2(2,1)
 	   else
 	        ! 1st for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_u(j)  = GREENFUN(x1,t1,xv,tv)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_u(j)  = GREENFUN(site1, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,1)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)              ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_v(j) = GREENFUN(xv,tv,x1,t1)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_v(j) = GREENFUN(sv, tv, site1, t1)
 	        enddo
 	        m_v2(1:pm,1)=m_v(1:pm)
 
 	        ! 2nd for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_u(j)  = GREENFUN(x2,t1,xv,tv)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_u(j)  = GREENFUN(site2, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,2)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_v(j) = GREENFUN(xv,tv,x2,t1)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_v(j) = GREENFUN(sv, tv, site2, t1)
 	        enddo
 	        m_v2(1:pm,2)=m_v(1:pm)
 	  
@@ -2134,7 +2129,7 @@ integer :: ro, co
 	real*8 :: g_uu0   ! sent through from measure()
 
 	real*8  :: det2, this_uu, this_ud,t0, t1, tv
-	integer :: j, i, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova,dir
+	integer :: j, i, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova,dir, sv
 
 	if(d .ne. 2) then 
 		print*, ' Dens-dens correlator ERROR: this one only works in 2D !!'
@@ -2160,14 +2155,14 @@ integer :: ro, co
 ! **** Get the second determinant ************************
 	    ! row
 	    do j=1,pm; vova=nm_clmn(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova)
-	       m_v(j) = GREENFUN(xv,tv,x2,t0) - GREENFUN(xv,tv,x1,t0)
+	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       m_v(j) = GREENFUN(sv, tv, site2, t0) - GREENFUN(sv, tv, site1, t0)
 	    enddo
 
 	    ! column
 	    do j=1,pm; vova=nm_row(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova)
-	       m_z(j) = GREENFUN(x2,t0,xv,tv) - GREENFUN(x1,t0,xv,tv)
+	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       m_z(j) = GREENFUN(site2, t0, sv, tv) - GREENFUN(site1, t0, sv, tv)
 	    enddo
 
 	    det2 = det_rc(pm,lda,matr,r,m_v,c,m_z,m_w)
@@ -2203,34 +2198,34 @@ integer :: ro, co
 	        this_uu = g_uu0/2.d0   ! just n_{up}
 	else
 	   !--- determinantz
-	   m_s2(1,1)=g0000-alpha; m_s2(1,2)=GREENFUN(x2,t1,x1,t1)
-	   m_s2(2,2)=g0000-alpha; m_s2(2,1)=GREENFUN(x1,t1,x2,t1)
+	   m_s2(1,1)=g0000-alpha; m_s2(1,2)=GREENFUN(site2, t1, site1, t1)
+	   m_s2(2,2)=g0000-alpha; m_s2(2,1)=GREENFUN(site1, t1, site2, t1)
 	   if(pm==0)then;  
 		det = (g0000-alpha)**2 - m_s2(1,2)*m_s2(2,1)
 	   else
 	        ! 1st for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_u(j)  = GREENFUN(x1,t1,xv,tv)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_u(j)  = GREENFUN(site1, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,1)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)              ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_v(j) = GREENFUN(xv,tv,x1,t1)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_v(j) = GREENFUN(sv, tv, site1, t1)
 	        enddo
 	        m_v2(1:pm,1)=m_v(1:pm)
 
 	        ! 2nd for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_u(j)  = GREENFUN(x2,t1,xv,tv)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_u(j)  = GREENFUN(site2, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,2)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova)
-	           m_v(j) = GREENFUN(xv,tv,x2,t1)
+	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           m_v(j) = GREENFUN(sv, tv, site2, t1)
 	        enddo
 	        m_v2(1:pm,2)=m_v(1:pm)
 	  
@@ -2882,9 +2877,9 @@ integer :: ro, co
 !----------------------------------------------
 !---  Green Function, spline interpolation 
 !----------------------------------------------
-      real*8 function GREENFUN(x1,tau1,x2,tau2)
+      real*8 function GREENFUN(site1, tau1, site2,tau2)
       implicit none
-	integer :: x1(1:d), x2(1:d),j, sgn
+	integer :: x1(1:d), x2(1:d), site1, site2, j, sgn
       double precision :: tau, tau1, tau2, dt, gre
 
 	integer :: nx, ny, nta  !, ntb
@@ -2907,8 +2902,8 @@ integer :: ro, co
 
 
 ! prepare coords, don't forger about PBC
-	j=1; nx = abs(x1(j)-x2(j)); nx = min(nx,N(j)-nx)
-	j=2; ny = abs(x1(j)-x2(j)); ny = min(ny,N(j)-ny)
+	    j=1; nx = abs(x1(j)-x2(j)); nx = min(nx,N(j)-nx)
+	    j=2; ny = abs(x1(j)-x2(j)); ny = min(ny,N(j)-ny)
 
 !----------------------------------- spline
 
@@ -2920,11 +2915,11 @@ integer :: ro, co
 
 !cccccccccccccccccccccccccccccccccccccc
       
-	ga=GR_DAT(nta,nx,ny)
-	gb=GR_DAT(nta+1,nx,ny)
+	ga=GR_DAT(nta, site1, site2)
+	gb=GR_DAT(nta+1, site1, site2)
 
-	gra=GRD_DAT(nta,nx,ny)
-	grb=GRD_DAT(nta+1,nx,ny)
+	gra=GRD_DAT(nta, site1, site2)
+	grb=GRD_DAT(nta+1, site1, site2)
 
       c=(ga-gb)*bmt1
 
@@ -2942,6 +2937,118 @@ integer :: ro, co
 !     Tabulates Green function and its time derivate at positive tau.
 !-------------------------------------
       subroutine TABULATE
+      implicit none
+	real*8, allocatable :: ham(:,:)
+	integer :: site,site1,j
+	real*8 :: factor, ww,ttt,term, gamma, expet(0:mtau)
+	integer :: nt
+
+	! lapack stuff
+	character*1 :: jobz,uplo
+	integer     :: ldh, lwork,info
+	real*8, allocatable  :: work(:), eps(:)
+
+	print*,'start with TABULATE'
+
+! build the hamiltonian
+	allocate(ham(1:Nsite,1:Nsite)) ; 
+	ham=0.d0
+	do site=1,Nsite
+	   ham(site,site)=ham(site,site) - mu
+	   do j=1,dd; site1=ass(j,site); 
+	      ham(site,site1)=ham(site,site1)-1.d0  
+	   enddo
+	enddo;	
+
+!  compute eigenvalues; for LAPACK parameters and arguments, see
+!  http://www.netlib.org/lapack/double/dsyev.f
+!  SUBROUTINE DSYEV( JOBZ, UPLO, N, A, LDA, W, WORK, LWORK, INFO )
+
+	jobz='V'  ! compute eigenvectorz
+	uplo='U'  ! use upper diag of ham(:,:) --- doesn't matter really
+	ldh=Nsite
+	lwork=12*Nsite
+	allocate( work(lwork), eps(Nsite) )
+
+! query the optimal workspace size
+	call dsyev(jobz,uplo,Nsite,ham,ldh,eps,work,-1,info)
+	lwork=work(1)
+	deallocate(work); allocate(work(lwork))
+
+! diagonalize
+	call dsyev(jobz,uplo,Nsite,ham,ldh,eps,work,lwork,info)
+
+	if(info/=0)then; print*,'*** dsyev returns info = ', info
+			 print*,'*** check the TABULATE routine'
+			 call mystop
+	endif
+
+
+!	print*,'optimal lwork =', work(1),lwork
+!
+!	print*,'eigenvalues:'
+!	do j=1,Nsite
+!		print*,eps(j)
+!	enddo
+!
+!	print*; print*,'----------- eigenvector # '
+!	do j=1,Nsite;
+!		!write(1,*)j,ham(j,6)
+!		print*,j,ham(j,1)
+!	enddo
+!	print*; print*; print*
+
+!------------- have the spectrum, proceed to the GFs
+	GR_DAT=0.d0; GRD_DAT=0.d0	
+
+	do j=1,Nsite
+
+	  gamma=-eps(j)*beta
+	  gamma=exp(gamma)+1.d0
+	  gamma=-1.d0/gamma
+
+	  ww = exp(-eps(j)*bmt) ! bmt=beta/mtau
+	  do nt=0,mtau; expet(nt)=ww**nt
+	  enddo
+
+          do site=1,Nsite ; do site1=1,Nsite
+	    factor = ham(site,j)*ham(site1,j)
+            do nt=0,mtau
+               term = factor*expet(nt)*gamma    !/Nsite
+               GR_DAT(nt,site,site1) = GR_DAT(nt,site,site1) + term
+               GRD_DAT(nt,site,site1) = GRD_DAT(nt,site,site1) -eps(j)*term
+            enddo
+
+          enddo; enddo ! site, site1
+
+	enddo   ! j: eigenvalues
+!------------------------
+
+
+! fill in fictitious nt=mtau+1, see GREENFUN for explanation
+	GR_DAT(mtau+1,:,:)=0.d0; GRD_DAT(mtau+1,:,:)=0.d0
+
+! fill g0000
+	site = 1; ttt=0.d0
+	g0000 = GREENFUN(site,ttt,site,ttt)
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+!	site0=1; site1=site0
+!	do j=1,N(1)
+!	  print*,site0,site1,GR_DAT(100,site0,site1),GRD_DAT(100,site0,site1)
+!	  site1=ass(1,site1); site1=ass(2,site1)
+!	enddo
+
+	print*,'done TABULATEing'
+
+      end subroutine TABULATE
+
+
+
+!-------------------------------------
+!     Tabulates Green function and its time derivate at positive tau.
+!-------------------------------------
+      subroutine TABULATE_uniform
       implicit none
 !
 ! These tabulated values will be used in greenfun() for the spline interpolation. 
@@ -3018,10 +3125,12 @@ integer :: ro, co
 	GR_DAT(mtau+1,:,:)=0.d0; GRD_DAT(mtau+1,:,:)=0.d0
 
 ! fill g0000
-	xxx = 0; ttt=0.d0
-	g0000 = GREENFUN(xxx,ttt,xxx,ttt)
+!!	xxx = 0; ttt=0.d0
+!!	g0000 = GREENFUN(xxx,ttt,xxx,ttt)
+!! uncomment and fix the line above if you need to run w/ uniform tabulate
+    print*, 'uniform TABULATE: halt'; call mystop
 
-      end subroutine TABULATE
+      end subroutine TABULATE_uniform
 
 
 
@@ -3097,7 +3206,7 @@ integer :: ro, co
 	  vova=nm_row(i); lesha=nm_clmn(j)
 	  xi=x(:,ksite(vova)); xj=x(:,ksite(lesha))
 	  ti=ktau(vova); tj=ktau(lesha)
-	  a(i,j)=GREENFUN(xj,tj,xi,ti)
+	  a(i,j)=GREENFUN(ksite(lesha), tj, ksite(vova), ti)
 	  if(i==j)a(i,j)=a(i,j)-alpha
 	enddo; enddo
 
