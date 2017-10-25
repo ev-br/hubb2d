@@ -282,9 +282,9 @@
 	implicit none 
 
 	logical :: acpt                   ! accepted update flag
-	integer :: ddd, i,j,i1, ans1, ans2, ans3 , dummy
+	integer :: i, j, ans1, ans2, ans3
 	real*8  :: r, dp, det , dt
-      character*6 :: cvoid
+    character*6 :: cvoid
 
 
 ! ------- pi pi pi pi ------------
@@ -571,8 +571,8 @@
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio
-	integer :: name, site,j,nk, xnew(d), xi(d),xm(d),xv(d),vova
-	real*8  :: tnew, ti, tm, tv
+	integer :: name, site,j,nk, vova, sv
+	real*8  :: tnew, tv
 
 	c_a_v = c_a_v + un1; acpt=.false.
 	prevstatus=status; status='_add__' 
@@ -590,7 +590,6 @@
 
 	site=Nsite*rndm()+1.d0
 	if(site>Nsite)site=Nsite    ! select a site to play on
-	xnew(:) = x(:,site) 
 	tnew = beta*rndm()                    ! select tau		
 
 !------------- determinant
@@ -599,9 +598,9 @@
 
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova)
-	   m_v(clmn(vova)) = GREENFUN(ksite(vova), tv, site, tnew)
-	   m_u(row(vova))  = GREENFUN(site, tnew, ksite(vova), tv)
+       sv = ksite(vova); tv=ktau(vova)
+	   m_v(clmn(vova)) = GREENFUN(sv, tv, site, tnew)
+	   m_u(row(vova))  = GREENFUN(site, tnew, sv, tv)
 	enddo
 	m_s = g0000-alpha
 	det = det_p1(pm,lda,matr,m_u,m_v,m_z,m_s)   ! det ratio itself
@@ -804,8 +803,6 @@
 	integer :: name, name2, site,j,nk, xnew(d), xv(d),vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
-	real*8 :: det1,det2
-
 	c_a_v2 = c_a_v2 + un1; acpt=.false.
 	prevstatus=status; status='_add__' 
 
@@ -930,8 +927,8 @@
 	subroutine try_add2_same(site,tnew,tnew2,ratio_)
 
 	real*8  :: ratio, ratio_
-	integer :: name, name2, site,j,nk, xnew(d), xv(d),vova, sv
-	real*8  :: tnew, tv, tnew2, temp2x2(2,2), bu
+	integer :: site,j, xnew(d), xv(d),vova, sv
+	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	if(pm==lda)then; call resize_matrix(-1); endif
 
@@ -986,8 +983,8 @@
 !
 ! This is complementary to subroutine add above
 !
-	real*8 :: ratio, ratio_ , temp2x2(2,2), tname, tname2
-	integer :: site,j,j2,jj,jj2,nk, name,name2, num,r,c,r2,c2, vova
+	real*8 :: ratio, temp2x2(2,2), tname, tname2
+	integer :: site,j,j2,jj,jj2,nk, name,name2, r,c,r2,c2, vova
 	integer :: rr1,rr2,cc1,cc2
 !	real*8 :: det_1, det_2, a_1(lda,lda), a_2(lda,lda)
 
@@ -1088,8 +1085,8 @@
 !
 ! This is complementary to subroutine add above
 !
-	real*8 :: ratio, ratio_ , temp2x2(2,2), bu
-	integer :: site,j,nk, name,name2, num,r,c,r2,c2, vova
+	real*8 :: ratio, ratio_ , temp2x2(2,2)
+	integer :: site, nk, name, name2, r, c, r2, c2
 
 	prevstatus=status; status='_drop_'
 
@@ -1144,8 +1141,6 @@
 	real*8  :: ratio
 	integer :: name, name2, site,site2,j,nk, xnew(d),xnew2(d), xv(d),vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
-
-	real*8 :: det1,det2
 
 	c_a_v2a = c_a_v2a + un1; acpt=.false.
 	prevstatus=status; status='_add2a' 
@@ -1245,10 +1240,8 @@
 !
 ! This is complementary to subroutine add above
 !
-	real*8 :: ratio, ratio_ , temp2x2(2,2), tname, tname2, det
-	integer :: site,site2,j,j2,jj,jj2,nk, name,name2, num,r,c,r2,c2, vova
-	integer :: rr1,rr2,cc1,cc2
-!	real*8 :: det_1, det_2, a_1(lda,lda), a_2(lda,lda)
+	real*8 :: ratio, ratio_ , temp2x2(2,2), det
+	integer :: site,site2, name,name2, r,c,r2,c2
 
 ! play unfortunate ones
 	site=ksite(name); !nk = nkink(site)
@@ -1401,11 +1394,9 @@
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio, ratio_
-	integer :: name, name2, site,site2,j,nk, xnew(d),xnew2(d), xv(d),vova, sv
+	integer :: site, site2, j, xnew(d),xnew2(d), xv(d),vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
-	real*8 :: det1,det2
-	
 	if(pm==lda)then; call resize_matrix(-1); endif
 
 
@@ -1454,7 +1445,7 @@
 	subroutine check_cnf
 	implicit none
 
-	integer :: site, name, j, nk
+	integer :: site, name, j
 
 ! check site links
 	do site=1,Nsite
@@ -1502,7 +1493,6 @@
 	subroutine measure
 
 	integer :: j
-	real*8  :: eta1
 	real*8  :: this_PE, this_KE, this_nn_szsz
 
 	if(present)then       !   GF sector
@@ -1944,7 +1934,7 @@
 	real*8 :: g_uu0   ! sent through from measure()
 
 	real*8  :: det2, this_uu, this_ud,t0, t1, tv
-	integer :: j, i, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova,dir, sv
+	integer :: j, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova,dir, sv
 
 	if(d .ne. 2) then 
 		print*, ' Dens-dens correlator ERROR: this one only works in 2D !!'
@@ -2104,10 +2094,10 @@
 !--- Print out and check the runtime
 !------------------------------------
 	subroutine prnt
-	integer :: i,j,k, name
-	real*8 :: xxx, yyy, dt 
+	integer :: i,j,k
+	real*8 :: xxx, dt
 
-	real*8 :: PE_av, PE_err, KE_av, KE_err, im_av, im_err
+	real*8 :: PE_av, PE_err, KE_av, KE_err
 	real*8 :: PE_2_av, PE_2_err, PEKE_av, PEKE_err, dbl, dbl_err,nn_av,nn_err
 	real*8 :: gss_av, gss_err
 	real*8 :: dens_av, dens_err,dummy, summ

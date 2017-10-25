@@ -1,5 +1,5 @@
 FF = gfortran
-FFLAGS = -ffree-form -ffree-line-length-none -fimplicit-none -fbounds-check -g3 -fbacktrace
+FFLAGS = -Wunused -ffree-form -ffree-line-length-none -fimplicit-none -fbounds-check -g3 -fbacktrace
 LIBS = -llapack -lblas
 
 FILES = det_n2___.f _rndm_mumbers.f lattice.f
