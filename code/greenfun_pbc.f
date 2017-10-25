@@ -21,14 +21,14 @@
     contains
 
 
-
 !----------------------------------------------
 !---  Green Function, spline interpolation 
 !----------------------------------------------
-    real*8 function GREENFUN(x1,tau1,x2,tau2)
+    real*8 function GREENFUN(site1, tau1, site2, tau2)
     implicit none
-    integer :: x1(1:d), x2(1:d),j, sgn
+    integer :: site1, site2
     double precision :: tau, tau1, tau2, dt, gre
+    integer :: x1(1:d), x2(1:d),j, sgn
 
     integer :: nxy(1:d)
     integer :: nx, ny, nta  !, ntb
@@ -51,13 +51,13 @@
 
 
 ! prepare coords, don't forger about PBC
+    x1 = x(:, site1); x2 = x(:, site2)
     nxy = distance_v(x1, x2)
     nx = nxy(1); ny = nxy(2)
 
 !----------------------------------- spline
 
     nta=dt*bmt1    ! Recall, bmt=beta/mtau, bmt1=1/bmt 
-
     tta=dt-nta*bmt 
     ttb=tta - bmt   
 
@@ -101,7 +101,7 @@
     real*8 :: kx,ky !,kz
 
     real*8 :: BC_twist, cos_BC_twist
-    integer :: xxx(1:d)
+    integer :: site
     real*8 :: ttt
 
     do i=1,d; pp(i)=4.d0*asin(1.d0)/N(i); enddo
@@ -162,13 +162,24 @@
         enddo; enddo ! ; enddo      ! momentum
 !------------------------
 
+! store beta used in tabulations for further use in GREENFUN
+    beta_tabulated = beta
+
 ! fill in fictitious nt=mtau+1, see GREENFUN for explanation
     GR_DAT(mtau+1,:,:)=0.d0; GRD_DAT(mtau+1,:,:)=0.d0
 
 ! fill g0000
-    xxx = 0; ttt=0.d0
-    g0000 = GREENFUN(xxx,ttt,xxx,ttt)
-    beta_tabulated = beta
+	site = 1; ttt=0.d0
+	g0000 = GREENFUN(site,ttt,site,ttt)
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+!	site0=1; site1=site0
+!	do j=1,N(1)
+!	  print*,site0,site1,GR_DAT(100,site0,site1),GRD_DAT(100,site0,site1)
+!	  site1=ass(1,site1); site1=ass(2,site1)
+!	enddo
+
+    print*,'done with TABULATE'
 
     end subroutine TABULATE
 
