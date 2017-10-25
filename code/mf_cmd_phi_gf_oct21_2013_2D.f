@@ -31,9 +31,6 @@
 	module vrbls
 	implicit none
 
-!! REMOVE LATER
-integer :: ro, co
-
 	real*8,  parameter :: nul=0.0d0, un1=1.0d0, un2 = 2.0d0
 	real*8   :: pi
 	integer, parameter :: i_hu = huge(1)
@@ -51,7 +48,7 @@ integer :: ro, co
 	real*8 :: mu         ! chem. potential
 	real*8 :: ef, kf     ! Fermi energy & momentum
 
-      real*8 :: eta        ! GF- vs Z-sector weight
+    real*8 :: eta        ! GF- vs Z-sector weight
 
 	real*8,parameter :: gf_eta=1.038d0   ! 1 + GF anomalous dimension, U(1) universality class
 
@@ -66,27 +63,6 @@ integer :: ro, co
 
 	real*8 :: bun           !  = beta*U*Nsite 
 	real*8 :: udt           !  = U*ddt_same
-
-!w	integer :: n_ca, n_le             ! # of sites within the cre/ann, leap cube
-!w	integer, allocatable :: uzli(:)   ! site list for cube()
-!w	logical, allocatable :: yes(:)    ! flags for cube()
-!w
-!w	integer :: rx_ca, rx_le            ! x- and \tau- radii for cre/ann, leaps
-!w	real*8  :: rt_ca, rt_le
-!w
-!w	integer, allocatable :: uzli_cube_ca(:,:), uzli_cube_le(:,:) ! site lists 
-!w
-!w! mega-leaps
-!w	integer :: nt_same             ! # of \tau points for leaps
-!w	real*8  :: ddt_same            ! corresp. interval length
-!w	integer :: n_ev_cut            ! # of events after the cutoff
-!w	integer, allocatable :: dx_le(:,:)
-!w	real*8,  allocatable :: dt_le(:), w_le(:)
-!w	real*8 :: w_norm            ! normalization factor for w_le(:)
-
-! nearest kink:
-!w	integer, allocatable :: name_best(:)
-!w	real*8, allocatable :: dist_best(:), distance(:) 
 
 !------------------------------------------------------
 !     Configuration
@@ -170,20 +146,14 @@ integer :: ro, co
 	!!  For 1D ONLY
 !	real*8  :: g_uu(0:20), g_ud(0:20)  ! Density-densiy correltaors, a.k.a 'dance-dance'
 	real*8  :: g_uu0 !! the current contribution to g_uu(0)
-
 !	real*8  :: z_uu(0:20),z_ud(0:20)
 
 	real*8, allocatable :: g_uu(:,:), z_uu(:,:)
 	real*8, allocatable :: g_ud(:,:), z_ud(:,:)
-	
-	
-!! the full Green's function
 
+!! the full Green's function
 	real*8, allocatable :: gf_r(:,:,:), gf_i(:,:,:), zgf(:,:,:)
 	integer :: G_nfreq=64 !! number of frequencies for the Green's function
-	
-
-
 
 ! Integrated ira-masha correlator:
 	real*8  :: im               ! estimator
@@ -244,13 +214,8 @@ integer :: ro, co
 
 ! Address/accept counters	for various updates
 	real*8 :: c_a_v, a_a_v, c_d_v, a_d_v
-!	real*8 :: c_ann, a_ann, c_cre, a_cre
-!	real*8 :: c_l_a, a_l_a, c_l_d, a_l_d
-!	real*8 :: c_r, a_r
 	real*8 :: c_a_v2, a_a_v2, a_d_v2, c_d_v2
 	real*8 :: c_a_v2a, a_a_v2a, a_d_v2a, c_d_v2a
-
-	real*8 :: i_backsc     ! 'backscattering' counter: leap_add immediately followed by a leap_drop
 
 ! Kink number output
       integer :: nm_min=0, nm_max=i_hu
@@ -421,10 +386,6 @@ integer :: ro, co
       allocate(phi(d))
       read(1,*)phi(1)
 	  read(1,*)phi(2)
-	  
-!      do i=2,d; phi(i)=phi(1); enddo
-     
-
 
 	close(1)
 
@@ -454,15 +415,10 @@ integer :: ro, co
 										! more memory will be allocated later if necessary	
 	allocate(matr(1:lda,1:lda),m_u(1:lda),m_v(1:lda))   ! TheMatrix
 	allocate(m_w(1:lda),m_z(1:lda))
-
-!	allocate(m_u2(lda,2),m_v2(2,lda),m_s2(2,2),m_c2(lda,2) )
-
 	allocate(m_u2(lda,2),m_v2(lda,2),m_z2(lda,2),m_w2(lda,2),m_x2(lda,2),m_s2(2,2)) 
-
 
 !	allocate( g_uu(  ), z_uu( 0:N(1)-1, 0:N(2)-1, 0:N(3)-1 ) )
 !	allocate( g_ud( 0:N(1)-1, 0:N(2)-1, 0:N(3)-1 ), z_ud( 0:N(1)-1),0:N(2)-1, 0:N(3)-1 ) )
-
         allocate( g_uu(0:N(1)-1, 0:N(2)-1), z_uu(0:N(1)-1, 0:N(2)-1) )
         allocate( g_ud(0:N(1)-1, 0:N(2)-1), z_ud(0:N(1)-1, 0:N(2)-1) )
 		
@@ -510,33 +466,13 @@ integer :: ro, co
 	close(OUT_UNIT)
 
 
-
-!      print*,'=============== nmnm = ', nmnm
-!      print*,'nnn = ',g0000
-!      print*,'phi = ', phi(:)
-!      print*,'KE = ', diag_KE()/Nsite*2.
-!      pause
-
-!      print*, "# phi = ", phi(1)
-!      do i=0,mtau
-!         print*,beta*i/mtau, GR_DAT(i,2,1,1)       
-!      enddo
-!      stop
-
 !----------- DONE with initializations
-
-
-!	print*,'ans1 = ', ans1 ; pause
 
 
 !=========== Read / init conf & thermalize =========
 
 
 	    ! 0 -- init&therm, 1-- rd, 2-- rd& retherm [w/ tuning \beta]
-
-!	print*,'beta = ', beta, ans1
-
-
 	select case(ans1)
         case(2)                !read & rethermalize w/ tuning \beta
 	     call rd_cnf
@@ -549,30 +485,15 @@ integer :: ro, co
 	     call therm1
 	end select
 
- !    if (ans1 == 1) then
-!	   call RD_CNF         ! read the condiguration
-!	   call therm2         ! thermalize if requested (via worm scheme)
- !     else
- !        call INIT_CNF       ! init the configuration 
-!	   call therm1         ! thermalize (via diagonal scheme)
-!      end if
-
-
-
 ! nullify counters
 	i_p=0.d0; i_w=0.d0; i_m=0.d0; step=0.d0; 
         c_a_v=0.d0; a_a_v=0.d0; c_d_v=0.d0; a_d_v=0.d0
         c_a_v2=0.d0; a_a_v2=0.d0; c_d_v2=0.d0; a_d_v2=0.d0
         c_a_v2a=0.d0; a_a_v2a=0.d0; c_d_v2a=0.d0; a_d_v2a=0.d0
-!      c_cre=0.d0; a_cre=0.d0; c_ann=0.d0; a_ann=0.d0
-!	c_l_a=0.d0; a_l_a=0.d0; c_l_d=0.d0; a_l_d=0.d0
-!	c_r=0.d0; a_r=0.d0
 	recalc_rate=0.d0
 
 ! Construct TheMatrix
-!	print*,'construct...', pm, lda
 	det=recalc_matrix(pm,lda,matr)
-!	print*,'...ok'
 
 
 !============== Read / init  statistics ==============
@@ -605,8 +526,6 @@ integer :: ro, co
 	   else if(r<prob(6))then;    call drop_2_any(acpt,det)	
 	   else; print*,'am I nuts or what???'; call mystop
 	   endif
-
-!!!!!! 	   call check_cnf
 
 !------------- recalculate if necessary -------------
 	   if( acpt ) then
@@ -1375,11 +1294,6 @@ integer :: ro, co
 	real*8 :: ratio, ratio_ , temp2x2(2,2), tname, tname2
 	integer :: site,site2,j,j2,jj,jj2,nk, name,name2, num,r,c,r2,c2, vova
 	integer :: rr1,rr2,cc1,cc2
-!	real*8 :: det_1, det_2, a_1(lda,lda), a_2(lda,lda)
-
-!	print*,'(0) check'
-!	call check_recalc()
-
 
 	c_d_v2a = c_d_v2a + un1; acpt=.false.
 	prevstatus=status; status='drop2a'; 
@@ -1415,10 +1329,6 @@ integer :: ro, co
 
 ! Metropolis
         if(ratio<1.d0)then; if(rndm()>ratio)return; endif
-
-!	print*,'(1) check'
-!	call check_recalc()
-
 
 	acpt=.true.
 
@@ -1475,19 +1385,7 @@ integer :: ro, co
 	call DropName(name)
 	call DropName(name2)
 
-	call check_cnf
-
-!	print*,'(2) check'
-!	call check_recalc()
-
-
-!	if(step==4420)then
-!	print*;
-!	print*,status,step
-!	print*,'det, bun = ', det,bun, nmnm
-!	endif
-
-!	call try_add_2_any(site,tname,site2,tname2, ratio)
+    !call check_cnf
 
 	a_d_v2a=a_d_v2a + 1.d0
 
@@ -1507,9 +1405,6 @@ integer :: ro, co
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	real*8 :: det1,det2
-
-	!call check_recalc()
-
 	
 	if(pm==lda)then; call resize_matrix(-1); endif
 
@@ -1538,15 +1433,6 @@ integer :: ro, co
 
 	endif  ! pm==0
 !---------------------------
-
-
-!	if(step==4420)then
-!	print*;
-!	print*,status,step
-!	print*,'det, bun = ', det,bun, nmnm
-!	endif
-
-
 
 	ratio = det*det
 	ratio = ratio*bun*bun/( (nmnm+2)*(nmnm+1) )
@@ -1937,11 +1823,6 @@ integer :: ro, co
 	  r = row(name) ; c= clmn(name)  	  ! find its position in the matrix
 	  x1(:)=x(:,site1)  	  ! get its coordinate for determinant calculation
 	  t0 = ktau(name)      	  ! Let the measuring time be the same as that on 'name' -- for easier testing
-	  
-	  ! select new sites to measure on at random
-	  !site1=floor(Nsite*rndm())+1  
-	  !site1=site
-          !x1(:)=x(:,site1)
 
 	  site2=floor(Nsite*rndm())+1
 	  x2(:)=x(:,site2)
@@ -2211,8 +2092,6 @@ integer :: ro, co
 	av  = sum( arr(1:n) )/Zb/n
 	av2 = sum( arr(1:n)**2 )/Zb/Zb/n
 
-				!av2 = av2 + (arr(j)/Zb)**2
-
 	dif = av2 - av*av; 	if(dif<0.d0)dif=0.d0
 
 	err = sqrt( dif ) / sqrt(1.d0*n)
@@ -2345,20 +2224,11 @@ integer :: ro, co
 !	write(1,fmt=777)ef, kf
 ! 777  format(8x,'E_F =',g12.5,4x,' k_F = ',g12.5 )
 
-!--- integrated correlator ---------------------------
-!	call bSTAT(im_stat(1:b_n),b_n,Z_b,im_av,im_err)
-!	write(1,*)' '
-!      write(1,fmt=703) im_av, im_err
-! 703  format(8x,'g_im(w=0,k=0) =',g12.5,4x,' +/- ',g12.5)
-
 !--- spin structure factor ---------------------------
 	call bSTAT(gss_stat(1:b_n),b_n,Z_b,gss_av,gss_err)
 	write(1,*)' '
       write(1,fmt=723) gss_av, gss_err
  723  format(8x,'NMSF =',g12.5,4x,' +/- ',g12.5)
-	
-!	write(1,*) ' '
-!	write(1,*) ' NMSF_bare=', gss0/Z
 
 !--- nn spin-spin corr  ---------------------------
 	call bSTAT(nn_szsz_stat(1:b_n),b_n,Z_b,nn_av,nn_err)
@@ -2374,10 +2244,7 @@ integer :: ro, co
 	write(1,*)' add/drop  ',a_a_v/(c_a_v+.001),' / ',a_d_v/(c_d_v+.001)
 	write(1,*)' a/d2_same ',a_a_v2/(c_a_v2+.001),' / ',a_d_v2/(c_d_v2+.001)
 	write(1,*)' a/d2_any  ',a_a_v2a/(c_a_v2a+.001),' / ',a_d_v2a/(c_d_v2a+.001)
-!	write(1,*)' cre/ann  ',a_cre/(c_cre+.001),' / ',a_ann/(c_ann+.001)
-!	write(1,*)' leap a/d ',a_l_a/(c_l_a+.001),' / ',a_l_d/(c_l_d+.001)
-!	write(1,*)' hop        ',a_r/(c_r+.001)
-	write(1,*)' recalc / backsc ', recalc_rate/(step + 0.0001) !,' / ',  i_backsc/(a_l_a + .0001)
+	write(1,*)' recalc / backsc ', recalc_rate/(step + 0.0001)
 
 
 	endif   ! b_n>3
@@ -2392,15 +2259,11 @@ integer :: ro, co
 !print*, g_ud(0,0,0)/z_ud(0,0,0)
 	do k=0, G_nfreq-1
 	   write(1,*) k, gf_r(0,0,k)/zgf(0,0,k)  ,gf_i(0,0,k)/zgf(0,0,k)
-!	   write(1,*)i, g_ud(i)/z_ud(i), z_ud(i)  ! ,g_ud(i,j,k)/z_ud(i,j,k)
-!	   write(1,*) ' '
-            !    print*,'ud : ',i,g_ud(i)/z_ud(i)
 	enddo
 	close(1)
 	
         fname='gf_ij_xi0'//trim(fnamesuffix)//'.dat'
 	open(1,file=trim(adjustl(fname)))
-!print*, g_ud(0,0,0)/z_ud(0,0,0)
 	do i=0,N(1)/2
 	do j=0,N(2)/2
 	   write(1,*) i,j, gf_r(i,j,0)/zgf(i,j,0) ,gf_i(i,j,0)/zgf(i,j,0)
@@ -2409,16 +2272,11 @@ integer :: ro, co
 	close(1)
 
 
-!	print* ; print* ; print*,'-----------'
         fname='g____ud'//trim(fnamesuffix)//'.dat'
 	open(1,file=trim(adjustl(fname)))
-!print*, g_ud(0,0,0)/z_ud(0,0,0)
 	do i=0,N(1)-1
 	do j=0,N(2)-1
 	   write(1,*)i,j, g_uu(i,j)/z_uu(i,j)  ,g_ud(i,j)/z_ud(i,j)
-!	   write(1,*)i, g_ud(i)/z_ud(i), z_ud(i)  ! ,g_ud(i,j,k)/z_ud(i,j,k)
-!	   write(1,*) ' '
-            !    print*,'ud : ',i,g_ud(i)/z_ud(i)
 	enddo
 	enddo
 	close(1)
@@ -2428,13 +2286,9 @@ integer :: ro, co
 	do i=0,N(1)-1
 	do j=0,N(2)-1
 	   write(1,*)i,j, g_uu(i,j)/z_uu(i,j) ! ,g_ud(i,j,k)/z_ud(i,j,k)
-!	   write(1,*)i, g_uu(i)/z_uu(i), z_uu(i)  ! ,g_ud(i,j,k)/z_ud(i,j,k)
-!	   write(1,*) ' '
-           !     print*,'uu : ',i,g_uu(i)/z_uu(i)
 	enddo
 	enddo
 	close(1)
-!	pause
 
         fname='g____szsz'//trim(fnamesuffix)//'.dat'
 	open(1,file=trim(adjustl(fname)))
@@ -2444,33 +2298,9 @@ integer :: ro, co
 	   dummy = 2.d0*g_uu(i,j)/z_uu(i,j) + 2.d0*g_ud(i,j)/z_ud(i,j)  -1.d0 
            dummy = dummy / 4.d0 	
            write(1,*)i,j, dummy
-
-!	   summ = summ + (-1)**(i)*dummy
-!           print*,i, dummy, summ
-
 	enddo
 	enddo
 	close(1)
-
-!	open(1,file=outputfname,position='append')
-!          write(1,*)'summ ( /Nsite )   = ', summ/Nsite
-!          write(1,*)'gss bare (sum)    = ', sum(gss_stat(1:b_n))/( b_n*Z_b )
-!          write(1,*)'gss bare (direct) = ',gss0/Z
-!        close(1)
-
-!        print*
-!        print*,'summ ( /Nsite )   = ', summ/Nsite
-!        print*,'gss bare (sum)    = ', sum(gss_stat(1:b_n))/( b_n*Z_b )
-!        print*,'gss bare (direct) = ',gss0/Z
-!        print*
-!        print*,' z_uu = ',z_uu(:)/sum(z_uu)
-!!        print*,' z_ud = ',z_ud(:)
-!        print*,' Z =         ', Z
-!!        print*,' sum(z_uu) = ', sum(z_uu)
-!!        print*,' sum(z_ud) = ', sum(z_ud) ; 
-!!        pause
-
-
 
 ! write kink number distrr
       xxx=sum(nmnm_distr(1:nmnm_sup))
@@ -2668,8 +2498,6 @@ integer :: ro, co
 	open(OUT_UNIT,file=outputfname,position='append')
 	write(OUT_UNIT,*)'init stat .....'
 
-!	Z_b = ceiling(beta*U*Nsite) + 1    ! The block size for statistics 
-!	Z_b = Z_b / 8                      ! [something to start with]
 	Z_b = 10
 	i_b = 0; b_n = 0
 
@@ -2730,8 +2558,6 @@ integer :: ro, co
 
 	    if(ans1==2)then ; beta_ini = beta ; 
 	    endif
-	
-!	print*,'rd_cnf: beta, _ini, fin = ', beta, beta_ini, beta_fin
 
         read(1,*)present
            if(present)then
@@ -2745,13 +2571,11 @@ integer :: ro, co
 	     endif
 !================== allocate enough memory to fit TheMatrix
 	    deallocate(matr,m_u,m_v,m_w,m_z,nm_row,nm_clmn)    ! deallocate first
-!	    deallocate(m_u2,m_v2,m_s2,m_c2)
 	    deallocate(m_u2,m_v2,m_z2,m_w2,m_x2,m_s2) 
 		lda=(int(pm/64)+1)*64+128
 		allocate(nm_row(lda),nm_clmn(lda))
 		allocate(matr(lda,lda))
 		allocate(m_u(lda),m_v(lda),m_w(lda),m_z(lda))
-!	    allocate(m_u2(lda,2),m_v2(2,lda),m_s2(2,2),m_c2(lda,2) )
 	allocate(m_u2(lda,2),m_v2(lda,2),m_z2(lda,2),m_w2(lda,2),m_x2(lda,2),m_s2(2,2)) 
 
 !=========================================
@@ -2839,10 +2663,7 @@ integer :: ro, co
 
 	allocate(matr(lda,lda),m_u(lda),m_v(lda))
 	allocate(m_w(lda),m_z(lda))
-
-!	allocate(m_u2(lda,2),m_v2(2,lda),m_s2(2,2),m_c2(lda,2) )
 	allocate(m_u2(lda,2),m_v2(lda,2),m_z2(lda,2),m_w2(lda,2),m_x2(lda,2),m_s2(2,2)) 
-
 	allocate(nm_row(lda),nm_clmn(lda))
 
 
@@ -2882,19 +2703,10 @@ integer :: ro, co
 	  if(i==j)a(i,j)=a(i,j)-alpha
 	enddo; enddo
 
-
-!	print*, '------------actual matrix----------------'
-!	print*, 'row:', a(ro, 1:pm)
-!	print*, 'column:', a(1:pm, co)
-!	print*, '-----------------------------------------'
-
-
 ! invert
 	det_big = full_inv(pm,lda,a)
 	
 	recalc_matrix = det_big       ! return the absolute value of the determinant
-
-!	print*, 'recalc_matrix, det=', det_big
 
 	end function recalc_matrix
 
@@ -2979,11 +2791,6 @@ integer :: ro, co
 	
       allocate(a(lda,lda))
       det_1 = recalc_matrix(pm,lda,a)
-	
-!	print*,'@ check_recalc : '
-!	do i=1,pm
-!		print*,a(i,1:pm)
-!	enddo
 
       do i=1,pm; do j=1,pm
 	    if(abs(a(i,j)-matr(i,j))>1d-8)then 
@@ -3017,7 +2824,6 @@ integer :: ro, co
 	integer :: howmanytimes = 20    ! adjust \beta this many times 
 	integer :: howmanystepsperbeta  ! how many MC steps with each \beta
 
-	!beta_fin = beta ;              
 	step_t = n_sw*bun              ! bun is set while reading the parameter file
 	howmanystepsperbeta = step_t/howmanytimes
 
@@ -3030,9 +2836,6 @@ integer :: ro, co
 	write(OUT_UNIT,*),'beta_ini, _fin = ', beta_ini, beta_fin
 	close(OUT_UNIT)
 
-	!print*,'starting therm1 : beta, _fin, _ini = ', beta, beta_fin, beta_ini
-
-
 !---------------------------------------------------
 	do j=1,howmanytimes
 
@@ -3044,7 +2847,6 @@ integer :: ro, co
 	  bmt = beta/mtau ; bmt1 = 1.d0/bmt 
 	  bun = beta*U*Nsite	  
 
-!	   print*,'calling tabulate @ j = ', j, 'out of ', howmanytimes
 	  call tabulate(beta, mtau, mu)                     ! GFs
 
 	  det = recalc_matrix(pm,lda,matr) 
@@ -3076,8 +2878,6 @@ integer :: ro, co
 	   endif
 !-------------------------------------------------
 
-
-
          nm_av=nm_av+(un1*nmnm)/step_p        
          IF(nmnm>nm_max)nm_max=nmnm
          IF(nmnm<nm_min)nm_min=nmnm
@@ -3099,10 +2899,6 @@ integer :: ro, co
 	if(n_sw>0) call wrt   
 
 	nm_av=0.d0; nm_max=0.d0; nm_min=0.d0
-
-
-	!pause
-
 
 	end subroutine therm1
 
