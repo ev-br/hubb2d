@@ -31,7 +31,7 @@
 	module vrbls
 	implicit none
 
-	real*8,  parameter :: nul=0.0d0, un1=1.0d0, un2 = 2.0d0
+	real*8,  parameter :: nul=0.0d0, un1=1.0d0
 	real*8   :: pi
 	integer, parameter :: i_hu = huge(1)
 
@@ -62,7 +62,6 @@
 !------------------------------------------------------
 
 	real*8 :: bun           !  = beta*U*Nsite 
-	real*8 :: udt           !  = U*ddt_same
 
 !------------------------------------------------------
 !     Configuration
@@ -710,10 +709,8 @@
 	integer :: site, name
 	real*8  :: tnew, det
 
-	integer :: xnew(d), j,vova, xv(d), nk
+	integer :: j,vova, nk
 	real*8  :: tv
-
-	xnew(:) = x(:,site) 
 
 !------------- determinant
 	if(pm==0)then; det=g0000-alpha  !ratio = g0000**2
@@ -721,7 +718,7 @@
 
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova)
+       tv=ktau(vova)
 	   m_v(clmn(vova)) = GREENFUN(ksite(vova), tv, site, tnew)
 	   m_u(row(vova))  = GREENFUN(site, tnew, ksite(vova), tv)
 	enddo
@@ -800,7 +797,7 @@
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio
-	integer :: name, name2, site,j,nk, xnew(d), xv(d),vova, sv
+	integer :: name, name2, site,j,nk, vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	c_a_v2 = c_a_v2 + un1; acpt=.false.
@@ -825,8 +822,7 @@
 
 	site=Nsite*rndm()+1.d0
 	if(site>Nsite)site=Nsite    ! select a site to play on
-	xnew(:) = x(:,site) 
-	tnew = beta*rndm()                    ! select tau		
+	tnew = beta*rndm()                    ! select tau
 	tnew2 = beta*rndm()             
 
 
@@ -851,7 +847,7 @@
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+       tv=ktau(vova); sv = ksite(vova)
 	   m_v2(clmn(vova),1) = GREENFUN(sv, tv, site, tnew2)
 	   m_v2(clmn(vova),2) = GREENFUN(sv, tv, site, tnew)
 	   m_u2(row(vova),1)  = GREENFUN(site, tnew2, sv, tv)
@@ -927,13 +923,10 @@
 	subroutine try_add2_same(site,tnew,tnew2,ratio_)
 
 	real*8  :: ratio, ratio_
-	integer :: site,j, xnew(d), xv(d),vova, sv
+	integer :: site, j, vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	if(pm==lda)then; call resize_matrix(-1); endif
-
-
-	xnew(:) = x(:,site) 
 
 !------------- determinant   
 	m_s2(1,1) = g0000-alpha; m_s2(2,2)=g0000-alpha;
@@ -945,7 +938,7 @@
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	   tv=ktau(vova); sv = ksite(vova)
 	   m_v2(clmn(vova),1) = GREENFUN(sv,tv, site, tnew2)
 	   m_v2(clmn(vova),2) = GREENFUN(sv,tv, site, tnew)
 	   m_u2(row(vova),1)  = GREENFUN(site ,tnew2, sv, tv)
@@ -1139,7 +1132,7 @@
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio
-	integer :: name, name2, site,site2,j,nk, xnew(d),xnew2(d), xv(d),vova, sv
+	integer :: name, name2, site,site2,j,nk, vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	c_a_v2a = c_a_v2a + un1; acpt=.false.
@@ -1164,12 +1157,10 @@
 	
 	site=Nsite*rndm()+1.d0
 	if(site>Nsite)site=Nsite    ! select a site to play on
-	xnew(:) = x(:,site) 
 	tnew = beta*rndm()                    ! select tau	
 
 	site2=Nsite*rndm()+1.d0
 	if(site2>Nsite)site2=Nsite
-	xnew2(:)=x(:,site2)	
 	tnew2 = beta*rndm()             
 
 !------------- determinant   
@@ -1182,7 +1173,7 @@
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	   tv=ktau(vova); sv = ksite(vova)
 	   m_v2(clmn(vova),1) = GREENFUN(sv, tv, site2, tnew2)
 	   m_v2(clmn(vova),2) = GREENFUN(sv, tv, site, tnew)
 	   m_u2(row(vova),1)  = GREENFUN(site2, tnew2, sv, tv)
@@ -1394,14 +1385,10 @@
 	real*8  :: det              ! det value to be returned to the main loop
 
 	real*8  :: ratio, ratio_
-	integer :: site, site2, j, xnew(d),xnew2(d), xv(d),vova, sv
+	integer :: site, site2, j, vova, sv
 	real*8  :: tnew, tv, tnew2, temp2x2(2,2)
 
 	if(pm==lda)then; call resize_matrix(-1); endif
-
-
-	xnew(:) = x(:,site) 
-	xnew2(:)=x(:,site2)	
 
 !------------- determinant   
 	m_s2(1,1) = g0000-alpha; m_s2(2,2)=g0000-alpha;
@@ -1413,7 +1400,7 @@
 	else
 ! calcualte the det ratio
 	do j=1,nmnm; vova=namelist(j); 
-	   xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	   tv=ktau(vova); sv = ksite(vova)
 	   m_v2(clmn(vova),1) = GREENFUN(sv, tv, site2, tnew2)
 	   m_v2(clmn(vova),2) = GREENFUN(sv, tv, site, tnew)
 	   m_u2(row(vova),1)  = GREENFUN(site2, tnew2, sv, tv)
@@ -1569,23 +1556,23 @@
 	real*8 function diag_dens()
 
 	real*8 :: det,ti, tn
-	integer :: site, xn(d), xi(d), j, vova, sv
+	integer :: site, j, vova, sv
 
 ! select where to insert a kink
 	site=Nsite*rndm()+1.d0; if(site>Nsite)site=Nsite
-	xn(:)=x(:,site); tn=beta*rndm()
+	tn=beta*rndm()
 	
 !------------- determinant
 	if(nmnm==0)then; det=g0000-alpha  
 	else
 
 	  do j=1,pm; vova=nm_row(j)               ! fill a column
-	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     ti=ktau(vova); sv = ksite(vova)
 	     m_u(j)  = GREENFUN(site, tn, sv, ti)
 	  enddo
 
 	  do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     ti=ktau(vova); sv = ksite(vova)
 	     m_v(j) = GREENFUN(sv, ti, site, tn)
 	  enddo
 
@@ -1608,7 +1595,7 @@
 	subroutine measure_GF()
 
 	real*8 :: det,ti, t1, t2, xi_k, phase
-	integer :: site1, site2, x1(d), x2(d), xi(d), j, vova, sv
+	integer :: site1, site2, x1(d), x2(d), j, vova, sv
 	integer :: k, i1,i2
 
 ! select where to insert the kinks
@@ -1623,12 +1610,12 @@
 	else
 
 	  do j=1,pm; vova=nm_row(j)               ! fill a column
-	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     ti=ktau(vova); sv = ksite(vova)
 	     m_u(j)  = GREENFUN(site1, t1, sv, ti)
 	  enddo
 
 	  do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	     xi=x(:,ksite(vova)); ti=ktau(vova); sv = ksite(vova)
+	     ti=ktau(vova); sv = ksite(vova)
 	     m_v(j) = GREENFUN(sv, ti, site2, t2)
 	  enddo
 
@@ -1661,7 +1648,7 @@
 !-----------------------------------------------
 	real*8 function diag_KE()
 
-	integer :: site1, site2, x1(d),x2(d), vova, xv(d), j, i, sv
+	integer :: site1, site2, vova, j, i, sv
 	real*8  :: t, det,tv
 !
 !  This estmator is for the tight-binding dispersion ONLY (n.n. sites)
@@ -1669,10 +1656,7 @@
 	site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite; 
 
 	i=dd*rndm()+1; if(i>dd)i=dd; site2 = ass(i,site1)
-		
-	x1=x(:,site1); x2=x(:,site2)
 	t=beta*rndm()
-	
 
 !------------- determinant
 	m_s = GREENFUN(site2, t, site1, t)        ! a corner 
@@ -1681,12 +1665,12 @@
 	else
 
 	  do j=1,pm; vova=nm_row(j)               ! fill a column
-	     xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	     tv=ktau(vova); sv = ksite(vova)
 	     m_u(j)  = GREENFUN(site2, t, sv, tv)
 	  enddo
 
 	  do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	     xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	     tv=ktau(vova); sv = ksite(vova)
 	     m_v(j) = GREENFUN(sv, tv, site1, t)
 	  enddo
 
@@ -1795,7 +1779,7 @@
 	real*8 :: this_PE, g_uu0   ! sent through from measure()
 
 	real*8  :: det2, this_uu, this_ud,t0, t1, tv
-	integer :: j, i,k, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova, sv
+	integer :: j, i,k, x1(d),x2(d), site1,site2, r,c,num,name, vova, sv
 
 	if(d .ne. 2) then 
 		print*, ' Dens-dens correlator ERROR: this one only works in 2D !!'
@@ -1820,21 +1804,21 @@
 ! **** Get the second determinant ************************
 	    ! row
 	    do j=1,pm; vova=nm_clmn(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       tv=ktau(vova); sv = ksite(vova)
 	       m_v(j) = GREENFUN(sv, tv, site2, t0) - GREENFUN(sv, tv, site1, t0)
 	    enddo
 
 	    ! column
 	    do j=1,pm; vova=nm_row(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       tv=ktau(vova); sv = ksite(vova)
 	       m_z(j) = GREENFUN(site2, t0, sv, tv) - GREENFUN(site1, t0, sv, tv)
 	    enddo
 
 	    det2 = det_rc(pm,lda,matr,r,m_v,c,m_z,m_w)
 !********************************************************
 
-	    i=abs(x2(1)-x1(1)) ; !!! i=min(i,N(1)-i)
-      	    k=abs(x2(2)-x1(2)) ; !!! k=min(k,N(2)-k)
+        i=abs(x2(1)-x1(1)) ; !!! i=min(i,N(1)-i)
+        k=abs(x2(2)-x1(2)) ; !!! k=min(k,N(2)-k)
 	    
 		this_ud = nmnm*det2/(U*beta*Nsite)  + alpha*alpha
  
@@ -1872,37 +1856,37 @@
 	        this_uu = g_uu0/2.d0   ! just n_{up}
 		i=0 ; k=0 
 	else
-	   i=abs(x2(1)-x1(1))  !!!; i=min(i,N(1)-i)
-      	   k=abs(x2(2)-x1(2)) !!! ; k=min(k,N(2)-k)
+       i=abs(x2(1)-x1(1))  !!!; i=min(i,N(1)-i)
+       k=abs(x2(2)-x1(2)) !!! ; k=min(k,N(2)-k)
 
 	   !--- determinantz
 	   m_s2(1,1)=g0000-alpha; m_s2(1,2)=GREENFUN(site2, t1, site1, t1)
 	   m_s2(2,2)=g0000-alpha; m_s2(2,1)=GREENFUN(site1, t1, site2, t1)
 	   if(pm==0)then;  
-		det = (g0000-alpha)**2 - m_s2(1,2)*m_s2(2,1)
+	        det = (g0000-alpha)**2 - m_s2(1,2)*m_s2(2,1)
 	   else
 	        ! 1st for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_u(j)  = GREENFUN(site1, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,1)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)              ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_v(j) = GREENFUN(sv, tv, site1, t1)
 	        enddo
 	        m_v2(1:pm,1)=m_v(1:pm)
 
 	        ! 2nd for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_u(j)  = GREENFUN(site2, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,2)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_v(j) = GREENFUN(sv, tv, site2, t1)
 	        enddo
 	        m_v2(1:pm,2)=m_v(1:pm)
@@ -1934,7 +1918,7 @@
 	real*8 :: g_uu0   ! sent through from measure()
 
 	real*8  :: det2, this_uu, this_ud,t0, t1, tv
-	integer :: j, x1(d),x2(d),xv(d), site1,site2, r,c,num,name, vova,dir, sv
+	integer :: j, x1(d),x2(d), site1,site2, r,c,num,name, vova,dir, sv
 
 	if(d .ne. 2) then 
 		print*, ' Dens-dens correlator ERROR: this one only works in 2D !!'
@@ -1960,13 +1944,13 @@
 ! **** Get the second determinant ************************
 	    ! row
 	    do j=1,pm; vova=nm_clmn(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       tv=ktau(vova); sv = ksite(vova)
 	       m_v(j) = GREENFUN(sv, tv, site2, t0) - GREENFUN(sv, tv, site1, t0)
 	    enddo
 
 	    ! column
 	    do j=1,pm; vova=nm_row(j)
-	       xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	       tv=ktau(vova); sv = ksite(vova)
 	       m_z(j) = GREENFUN(site2, t0, sv, tv) - GREENFUN(site1, t0, sv, tv)
 	    enddo
 
@@ -2010,26 +1994,26 @@
 	   else
 	        ! 1st for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_u(j)  = GREENFUN(site1, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,1)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)              ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_v(j) = GREENFUN(sv, tv, site1, t1)
 	        enddo
 	        m_v2(1:pm,1)=m_v(1:pm)
 
 	        ! 2nd for up-down
 	        do j=1,pm; vova=nm_row(j)               ! fill a column
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_u(j)  = GREENFUN(site2, t1, sv, tv)
 	        enddo
 	        m_u2(1:pm,2)=m_u(1:pm)
 
 	        do j=1,pm; vova=nm_clmn(j)             ! fill a row
-	           xv=x(:,ksite(vova)); tv=ktau(vova); sv = ksite(vova)
+	           tv=ktau(vova); sv = ksite(vova)
 	           m_v(j) = GREENFUN(sv, tv, site2, t1)
 	        enddo
 	        m_v2(1:pm,2)=m_v(1:pm)
@@ -2675,7 +2659,7 @@
 	integer :: pm,lda     ! actual size & leading dimension of A
 	real*8  :: a(lda,lda)
 
-	integer :: i,j, vova, lesha, xi(d), xj(d)
+	integer :: i,j, vova, lesha
 	real*8  :: ti,tj, det_big
 
 	recalc_matrix = 0.;
@@ -2687,7 +2671,6 @@
 ! build the matrix
 	do j=1,pm; do i=1,pm
 	  vova=nm_row(i); lesha=nm_clmn(j)
-	  xi=x(:,ksite(vova)); xj=x(:,ksite(lesha))
 	  ti=ktau(vova); tj=ktau(lesha)
 	  a(i,j)=GREENFUN(ksite(lesha), tj, ksite(vova), ti)
 	  if(i==j)a(i,j)=a(i,j)-alpha
