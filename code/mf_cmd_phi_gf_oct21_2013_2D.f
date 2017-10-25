@@ -57,20 +57,7 @@ integer :: ro, co
 
 	real*8,parameter :: H_eta=0.03d0   ! eta in Heisenberg universality class
 
-!--- Green function array
-	integer, parameter :: mt_max=2000    ! Max. number of the mesh points for tau
-!	integer, parameter :: ntab_max=14 ! Max. number of of sites per dimension for tabulation
-	integer :: ntab                   ! Actual Number of sites per dimension for tabulation
-	integer :: mtau
-	real*8, allocatable :: GR_DAT(:,:,:), GRD_DAT(:,:,:) ! Green function & derivative arrays
-
-	real*8 :: bmt, bmt1     ! a shorthand for beta/mtau, and its inverse
-
-	real*8 :: g0000         ! green function w/ all arg = 0, non-interacting density  
-
-	real*8 :: alpha         ! Rubtsov's alpha
-
-      real*8, allocatable :: phi(:)   ! BC twist
+    real*8 :: alpha         ! Rubtsov's alpha
 
 
 !------------------------------------------------------
@@ -326,6 +313,7 @@ integer :: ro, co
 	use vrbls; use det_n2
 	use mumbers; !use tree
     use lattice
+    use green_functions
 	implicit none 
 
 	logical :: acpt                   ! accepted update flag
@@ -452,11 +440,6 @@ integer :: ro, co
 
 !---------- DONE reading, allocating memory:
 
-! Green functions
-	ntab=maxval(N(:)/2+1)                          ! the longest jump w/PBC is N/2
-	allocate( GR_DAT(0:mt_max+1, 1:Nsite, 1:Nsite) )
-	allocate( GRD_DAT(0:mt_max+1, 1:Nsite, 1:Nsite) )
-
 !--- Lattice
 	allocate (ass(dd,Nsite),back(dd),x(1:d,1:Nsite))
 	CALL ASSA
@@ -499,7 +482,7 @@ integer :: ro, co
 	call mystop; endif
 
 	print*,' regular tabulate'
-	call TABULATE
+	call TABULATE(beta, mtau, mu)
 	write(OUT_UNIT,*)'...done'
 
 
@@ -2825,176 +2808,6 @@ integer :: ro, co
 	end subroutine init_cnf
 
 
-!----------------------------------------------
-!---  Green Function, spline interpolation 
-!----------------------------------------------
-      real*8 function GREENFUN(site1, tau1, site2,tau2)
-      implicit none
-	integer :: x1(1:d), x2(1:d), site1, site2, j, sgn
-      double precision :: tau, tau1, tau2, dt, gre
-
-	integer :: nx, ny, nta  !, ntb
-	double precision :: tta,ttb,ga,gb,c, gra,grb   !,p
-
-! prepare \tau
-      tau=tau1-tau2
-      dt=tau; sgn=1
-
-	if(tau < 1.d-14)then; dt=beta+tau; sgn=-1; endif
-! G(t=0) must be understood as G(t-> -0) = -G(t=\beta)
-! A long way to accomplish this is below, commented out. A short way is above :).
-!
-!     if (abs(tau) < 1.d-14) then; dt = beta; sgn=-1
-!     else if (tau > 0.d0) then; dt=tau; sgn=1
-!	else; dt=beta+tau; sgn=-1
-!	end if
-!----------------------------------------
-
-
-
-! prepare coords, don't forger about PBC
-	    j=1; nx = abs(x1(j)-x2(j)); nx = min(nx,N(j)-nx)
-	    j=2; ny = abs(x1(j)-x2(j)); ny = min(ny,N(j)-ny)
-
-!----------------------------------- spline
-
-	nta=dt*bmt1    ! Recall, bmt=beta/mtau, bmt1=1/bmt 
-
-      tta=dt-nta*bmt 
-	ttb=tta - bmt   
-
-
-!cccccccccccccccccccccccccccccccccccccc
-      
-	ga=GR_DAT(nta, site1, site2)
-	gb=GR_DAT(nta+1, site1, site2)
-
-	gra=GRD_DAT(nta, site1, site2)
-	grb=GRD_DAT(nta+1, site1, site2)
-
-      c=(ga-gb)*bmt1
-
-      gre=(c+gra)*ttb + (c+grb)*tta
-      gre=gre*tta*ttb*bmt1 + gb*tta-ga*ttb
-      gre=gre*bmt1
-
-
-	GREENFUN = gre*sgn
-
-      end function GREENFUN
-
-
-!-------------------------------------
-!     Tabulates Green function and its time derivate at positive tau.
-!-------------------------------------
-      subroutine TABULATE
-      implicit none
-	real*8, allocatable :: ham(:,:)
-	integer :: site,site1,j
-	real*8 :: factor, ww,ttt,term, gamma, expet(0:mtau)
-	integer :: nt
-
-	! lapack stuff
-	character*1 :: jobz,uplo
-	integer     :: ldh, lwork,info
-	real*8, allocatable  :: work(:), eps(:)
-
-	print*,'start with TABULATE'
-
-! build the hamiltonian
-	allocate(ham(1:Nsite,1:Nsite)) ; 
-	ham=0.d0
-	do site=1,Nsite
-	   ham(site,site)=ham(site,site) - mu
-	   do j=1,dd; site1=ass(j,site); 
-	      ham(site,site1)=ham(site,site1)-1.d0  
-	   enddo
-	enddo;	
-
-!  compute eigenvalues; for LAPACK parameters and arguments, see
-!  http://www.netlib.org/lapack/double/dsyev.f
-!  SUBROUTINE DSYEV( JOBZ, UPLO, N, A, LDA, W, WORK, LWORK, INFO )
-
-	jobz='V'  ! compute eigenvectorz
-	uplo='U'  ! use upper diag of ham(:,:) --- doesn't matter really
-	ldh=Nsite
-	lwork=12*Nsite
-	allocate( work(lwork), eps(Nsite) )
-
-! query the optimal workspace size
-	call dsyev(jobz,uplo,Nsite,ham,ldh,eps,work,-1,info)
-	lwork=work(1)
-	deallocate(work); allocate(work(lwork))
-
-! diagonalize
-	call dsyev(jobz,uplo,Nsite,ham,ldh,eps,work,lwork,info)
-
-	if(info/=0)then; print*,'*** dsyev returns info = ', info
-			 print*,'*** check the TABULATE routine'
-			 call mystop
-	endif
-
-
-!	print*,'optimal lwork =', work(1),lwork
-!
-!	print*,'eigenvalues:'
-!	do j=1,Nsite
-!		print*,eps(j)
-!	enddo
-!
-!	print*; print*,'----------- eigenvector # '
-!	do j=1,Nsite;
-!		!write(1,*)j,ham(j,6)
-!		print*,j,ham(j,1)
-!	enddo
-!	print*; print*; print*
-
-!------------- have the spectrum, proceed to the GFs
-	GR_DAT=0.d0; GRD_DAT=0.d0	
-
-	do j=1,Nsite
-
-	  gamma=-eps(j)*beta
-	  gamma=exp(gamma)+1.d0
-	  gamma=-1.d0/gamma
-
-	  ww = exp(-eps(j)*bmt) ! bmt=beta/mtau
-	  do nt=0,mtau; expet(nt)=ww**nt
-	  enddo
-
-          do site=1,Nsite ; do site1=1,Nsite
-	    factor = ham(site,j)*ham(site1,j)
-            do nt=0,mtau
-               term = factor*expet(nt)*gamma    !/Nsite
-               GR_DAT(nt,site,site1) = GR_DAT(nt,site,site1) + term
-               GRD_DAT(nt,site,site1) = GRD_DAT(nt,site,site1) -eps(j)*term
-            enddo
-
-          enddo; enddo ! site, site1
-
-	enddo   ! j: eigenvalues
-!------------------------
-
-
-! fill in fictitious nt=mtau+1, see GREENFUN for explanation
-	GR_DAT(mtau+1,:,:)=0.d0; GRD_DAT(mtau+1,:,:)=0.d0
-
-! fill g0000
-	site = 1; ttt=0.d0
-	g0000 = GREENFUN(site,ttt,site,ttt)
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-!	site0=1; site1=site0
-!	do j=1,N(1)
-!	  print*,site0,site1,GR_DAT(100,site0,site1),GRD_DAT(100,site0,site1)
-!	  site1=ass(1,site1); site1=ass(2,site1)
-!	enddo
-
-	print*,'done TABULATEing'
-
-      end subroutine TABULATE
-
-
 !-------------------------------
 !--- Increase LDA (matrix storage): 
 !      if lnew == -1 then just add 512
@@ -3232,7 +3045,7 @@ integer :: ro, co
 	  bun = beta*U*Nsite	  
 
 !	   print*,'calling tabulate @ j = ', j, 'out of ', howmanytimes
-	  call tabulate
+	  call tabulate(beta, mtau, mu)                     ! GFs
 
 	  det = recalc_matrix(pm,lda,matr) 
 
