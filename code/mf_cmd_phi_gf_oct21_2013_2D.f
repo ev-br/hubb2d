@@ -1678,7 +1678,7 @@
 	endif
 
 ! return value
-	diag_KE = dd*Nsite*det  ! d*Nsite is the # of bonds,       
+	diag_KE = 2.0*Nbond*det   ! d*Nsite is the # of bonds,       
 				! a factor of 2 is due to the spin summation
 				! BUT : THERE MUST BE ANOTHER FACTOR OF 2 BECAUSE e(k)= -2t cos(...)  !!!
 

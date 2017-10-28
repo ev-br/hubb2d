@@ -4,13 +4,14 @@
     module lattice
     implicit none
 
-    public :: d, dd, N, N2, Nsite, ass, back, x, ASSA, distance_v
+    public :: d, dd, N, N2, Nsite, Nbond, ass, back, x, ASSA, distance_v
 
     private
 
     integer :: d, dd
     integer, allocatable :: N(:), N2(:)
     integer :: Nsite      ! Total number of sites
+    integer :: Nbond      ! Total number of bonds
 
 !------------------------------------------------------
 !     Sites and Associations
@@ -59,6 +60,7 @@
 !               + N(1)*...*N(d-1)*(ic(d)-1)
 
       allocate (ass(dd,Nsite),back(dd),x(1:d,1:Nsite))
+      Nbond = d*Nsite   ! number of bonds
 
       NN(1)=1; do i=2,d+1; NN(i)=NN(i-1)*N(i-1); enddo
        
@@ -90,7 +92,7 @@
 
             ass(i,site)=site1
             ass(back(i),site1)=site
-	      x(:,site)=ic(:)
+            x(:,site)=ic(:)
                  
          END DO
       END DO
