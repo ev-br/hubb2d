@@ -1647,15 +1647,19 @@
 !-----------------------------------------------
 	real*8 function diag_KE()
 
-	integer :: site1, site2, vova, j, i, sv
+	integer :: site1, site2, vova, j, i, sv, numn
 	real*8  :: t, det,tv
 !
 !  This estmator is for the tight-binding dispersion ONLY (n.n. sites)
 !
 	site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite; 
-
-	i=dd*rndm()+1; if(i>dd)i=dd; site2 = ass(i,site1)
-	t=beta*rndm()
+    numn = num_neighb(site1)
+	i=numn*rndm()+1; if(i>numn)i=numn;
+    site2 = ass(i,site1)
+    if(site2 < 0)then; print*,'KE: site1 = ', site1, ' i = ', i, ' site2 = ', site2
+        call mystop
+    endif
+    t=beta*rndm()
 
 !------------- determinant
 	m_s = GREENFUN(site2, t, site1, t)        ! a corner 
@@ -1917,7 +1921,7 @@
 	real*8 :: g_uu0   ! sent through from measure()
 
 	real*8  :: det2, this_uu, this_ud,t0, t1, tv
-	integer :: j, x1(d),x2(d), site1,site2, r,c,num,name, vova,dir, sv
+	integer :: j, x1(d),x2(d), site1,site2, r,c,num,name, vova,dir, sv, numn
 
 	if(d .ne. 2) then 
 		print*, ' Dens-dens correlator ERROR: this one only works in 2D !!'
@@ -1935,10 +1939,15 @@
 	  r = row(name) ; c= clmn(name)  	  ! find its position in the matrix
 	  x1(:)=x(:,site1)  	  ! get its coordinate for determinant calculation
 	  t0 = ktau(name)      	  ! Let the measuring time be the same as that on 'name' -- for easier testing
-	  
-          dir = dd*rndm()+1.d0; if(dir>dd)dir=dd
-	  site2=ass(dir,site1)
-	  x2(:)=x(:,site2)
+
+      numn = num_neighb(site1) 
+      dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
+      site2=ass(dir,site1)
+      x2(:)=x(:,site2)
+      if(site2 < 0)then
+          print*,'szsz: site1 = ', site1, ' dir = ', dir, ' site2 = ', site2
+          call mystop
+      endif
 
 ! **** Get the second determinant ************************
 	    ! row
@@ -1962,7 +1971,8 @@
 	        site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
        	        !site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
 
-                dir = dd*rndm()+1.d0; if(dir>dd)dir=dd
+            numn = num_neighb(site1)
+            dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
 	        site2=ass(dir,site1)
 
         	this_ud = alpha*alpha
@@ -1977,10 +1987,14 @@
 	x1 = x(:,site1)
 
 	!site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
-        
-        dir = dd*rndm()+1.d0; if(dir>dd)dir=dd
-	site2=ass(dir,site1)
-	x2 = x(:,site2)
+    numn = num_neighb(site1) 
+    dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
+    site2=ass(dir,site1)
+    x2 = x(:,site2)
+    if(site2 < 0)then
+        print*,'uu@szsz: site1 = ', site1, ' dir = ', dir, ' site2 = ', site2
+        call mystop
+    endif
 
 	if(site1==site2)then
 	        this_uu = g_uu0/2.d0   ! just n_{up}

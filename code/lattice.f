@@ -4,7 +4,7 @@
     module lattice
     implicit none
 
-    public :: d, dd, N, N2, Nsite, Nbond, ass, back, x, ASSA, distance_v
+    public :: d, dd, N, N2, Nsite, Nbond, ass, back, x, ASSA, distance_v, num_neighb
 
     private
 
@@ -116,5 +116,17 @@
 
     end function distance_v
 
+
+!----------------------------------------------
+!--- Number of neighbors
+!----------------------------------------------
+    function num_neighb(site)
+    implicit none
+    integer :: num_neighb
+    integer, intent(in) :: site
+
+    num_neighb = dd
+
+    end function num_neighb
 
     end module lattice
