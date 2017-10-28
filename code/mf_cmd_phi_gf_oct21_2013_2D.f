@@ -401,7 +401,6 @@
 !---------- DONE reading, allocating memory:
 
 !--- Lattice
-	allocate (ass(dd,Nsite),back(dd),x(1:d,1:Nsite))
 	CALL ASSA
 
 !--- Configuration

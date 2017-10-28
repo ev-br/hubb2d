@@ -58,6 +58,8 @@
 !     site = 1 + (ic(1)-1) + N(1)*(ic(2)-1) +...
 !               + N(1)*...*N(d-1)*(ic(d)-1)
 
+      allocate (ass(dd,Nsite),back(dd),x(1:d,1:Nsite))
+
       NN(1)=1; do i=2,d+1; NN(i)=NN(i-1)*N(i-1); enddo
        
       do i=1,d; back(i)=i+d; back(i+d)=i; enddo 
