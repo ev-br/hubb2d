@@ -1652,9 +1652,9 @@
 !
 !  This estmator is for the tight-binding dispersion ONLY (n.n. sites)
 !
-	site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite; 
+    site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite; 
     numn = num_neighb(site1)
-	i=numn*rndm()+1; if(i>numn)i=numn;
+    i=numn*rndm()+1; if(i>numn)i=numn;
     site2 = ass(i,site1)
     if(site2 < 0)then; print*,'KE: site1 = ', site1, ' i = ', i, ' site2 = ', site2
         call mystop
@@ -1939,7 +1939,6 @@
 	  r = row(name) ; c= clmn(name)  	  ! find its position in the matrix
 	  x1(:)=x(:,site1)  	  ! get its coordinate for determinant calculation
 	  t0 = ktau(name)      	  ! Let the measuring time be the same as that on 'name' -- for easier testing
-
       numn = num_neighb(site1) 
       dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
       site2=ass(dir,site1)
@@ -1974,6 +1973,11 @@
             numn = num_neighb(site1)
             dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
 	        site2=ass(dir,site1)
+            if(site2 < 0)then;
+                print*,'ud@szsz, site1 = ', site1, ' dir = ', dir, ' site2 = ', site2
+                call mystop
+            endif
+
 
         	this_ud = alpha*alpha
 
