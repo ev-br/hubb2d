@@ -113,7 +113,7 @@
        ham(site,site)=ham(site, site) - mu
        do j=1, dd
           site1 = ass(j, site)
-          ham(site, site1) = ham(site, site1) - 1.d0
+          if(site1 > 0) ham(site, site1) = ham(site, site1) - 1.d0
        enddo
     enddo
 

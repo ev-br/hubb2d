@@ -1994,11 +1994,11 @@
     numn = num_neighb(site1) 
     dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
     site2=ass(dir,site1)
-    x2 = x(:,site2)
     if(site2 < 0)then
         print*,'uu@szsz: site1 = ', site1, ' dir = ', dir, ' site2 = ', site2
         call mystop
     endif
+    x2 = x(:,site2)
 
 	if(site1==site2)then
 	        this_uu = g_uu0/2.d0   ! just n_{up}
@@ -2341,7 +2341,7 @@
 ! time to wrap up? --- write everything, release allocated memory and wrap up.
 	if(lastone)then; 
 	    open(1,file=outputfname,position='append')
-		write(1,*)'Time to wrap up, dude..'; 
+		write(1,*)'Time to wrap up.'; 
 		close(1)
 	    call wrt
 		call mystop
