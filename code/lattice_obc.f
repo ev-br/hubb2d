@@ -61,7 +61,7 @@
 !               + N(1)*...*N(d-1)*(ic(d)-1)
 
       allocate (ass(dd,Nsite),back(dd),x(1:d,1:Nsite), nneighb(1:Nsite))
-      Nbond = d*Nsite   ! number of bonds
+      Nbond = d*Nsite - 2*sum(N)   ! number of bonds with OBC in d=2
 
       NN(1)=1; do i=2,d+1; NN(i)=NN(i-1)*N(i-1); enddo
 
