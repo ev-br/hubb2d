@@ -1654,11 +1654,11 @@
 !
     site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite; 
     numn = num_neighb(site1)
+
+112 continue
     i=numn*rndm()+1; if(i>numn)i=numn;
     site2 = ass(i,site1)
-    if(site2 < 0)then; print*,'KE: site1 = ', site1, ' i = ', i, ' site2 = ', site2
-        call mystop
-    endif
+    if(site2 < 0) goto 112
     t=beta*rndm()
 
 !------------- determinant
@@ -1939,14 +1939,13 @@
 	  r = row(name) ; c= clmn(name)  	  ! find its position in the matrix
 	  x1(:)=x(:,site1)  	  ! get its coordinate for determinant calculation
 	  t0 = ktau(name)      	  ! Let the measuring time be the same as that on 'name' -- for easier testing
-      numn = num_neighb(site1) 
+
+113   continue
+      numn = num_neighb(site1)
       dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
       site2=ass(dir,site1)
+      if(site2 < 0) goto 113
       x2(:)=x(:,site2)
-      if(site2 < 0)then
-          print*,'szsz: site1 = ', site1, ' dir = ', dir, ' site2 = ', site2
-          call mystop
-      endif
 
 ! **** Get the second determinant ************************
 	    ! row
@@ -1970,16 +1969,13 @@
 	        site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
        	        !site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
 
+114         continue
             numn = num_neighb(site1)
             dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
-	        site2=ass(dir,site1)
-            if(site2 < 0)then;
-                print*,'ud@szsz, site1 = ', site1, ' dir = ', dir, ' site2 = ', site2
-                call mystop
-            endif
+            site2=ass(dir,site1)
+            if(site2 < 0) goto 114
 
-
-        	this_ud = alpha*alpha
+            this_ud = alpha*alpha
 
 	endif
 
@@ -1990,14 +1986,12 @@
 	site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
 	x1 = x(:,site1)
 
-	!site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
-    numn = num_neighb(site1) 
+    ! select a neighbor across a bond
+111 continue
+    numn = num_neighb(site1)
     dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
     site2=ass(dir,site1)
-    if(site2 < 0)then
-        print*,'uu@szsz: site1 = ', site1, ' dir = ', dir, ' site2 = ', site2
-        call mystop
-    endif
+    if(site2 < 0)goto 111
     x2 = x(:,site2)
 
 	if(site1==site2)then
