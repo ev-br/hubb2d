@@ -2816,9 +2816,19 @@
 
 	open(OUT_UNIT,file=outputfname,position='append')
 	write(OUT_UNIT,*)' '
-	write(OUT_UNIT,*)'Thermalization [diag] will be done by ', step_t,' steps'
-	write(OUT_UNIT,*),'beta_ini, _fin = ', beta_ini, beta_fin
-	close(OUT_UNIT)
+
+    if (step_t > 0)then
+        write(OUT_UNIT,*)'Thermalization [diag] will be done by ', step_t,' steps'
+        write(OUT_UNIT,*),'beta_ini, _fin = ', beta_ini, beta_fin
+        close(OUT_UNIT)
+    else
+        write(OUT_UNIT, *)'Thermalization not requested, skipping.'
+        close(OUT_UNIT)
+        beta = beta_fin
+        bmt = beta/mtau ; bmt1 = 1.d0/bmt 
+        bun = beta*U*Nsite
+        return
+    endif
 
 !---------------------------------------------------
 	do j=1,howmanytimes
