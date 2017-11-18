@@ -284,6 +284,7 @@
 	integer :: i, j, ans1, ans2, ans3
 	real*8  :: r, dp, det , dt
     character*6 :: cvoid
+    character*6 :: version_tag
 
 
 ! ------- pi pi pi pi ------------
@@ -312,6 +313,13 @@
 	write(OUT_UNIT,*) ' reading ', myparfname,' ...'
 
     open( 1, file=trim(myparfname) )
+
+    read(1, *)version_tag
+    if (trim(adjustl(version_tag)) /= "__v1__")then
+        write(OUT_UNIT, *)"Wrong version tag ", version_tag, ". STOP"
+        print*,"Wrong version tag ", version_tag, ". STOP"
+        call mystop
+    endif
 
     read(1,*)d
     dd = 2*d
