@@ -423,15 +423,13 @@
 	allocate(m_w(1:lda),m_z(1:lda))
 	allocate(m_u2(lda,2),m_v2(lda,2),m_z2(lda,2),m_w2(lda,2),m_x2(lda,2),m_s2(2,2)) 
 
-!	allocate( g_uu(  ), z_uu( 0:N(1)-1, 0:N(2)-1, 0:N(3)-1 ) )
-!	allocate( g_ud( 0:N(1)-1, 0:N(2)-1, 0:N(3)-1 ), z_ud( 0:N(1)-1),0:N(2)-1, 0:N(3)-1 ) )
-        allocate( g_uu(0:N(1)-1, 0:N(2)-1), z_uu(0:N(1)-1, 0:N(2)-1) )
-        allocate( g_ud(0:N(1)-1, 0:N(2)-1), z_ud(0:N(1)-1, 0:N(2)-1) )
-		
+
+    allocate( g_uu(1:Nsite, 1:Nsite), z_uu(1:Nsite, 1:Nsite) )
+    allocate( g_ud(1:Nsite, 1:Nsite), z_ud(1:Nsite, 1:Nsite) )
+
         allocate( gf_r(0:N(1)/2, 0:N(2)/2, 0:G_nfreq-1) )
 		allocate( gf_i(0:N(1)/2, 0:N(2)/2, 0:G_nfreq-1) )
 		allocate( zgf(0:N(1)/2, 0:N(2)/2, 0:G_nfreq-1))
-	
 
 ! Name Manager is initialized in either init_cnf or rd_cnf
 
@@ -1834,10 +1832,10 @@
 		this_ud = nmnm*det2/(U*beta*Nsite)  + alpha*alpha
  
 	else
-	        site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
-       	        site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
-		x1(:)=x(:,site1) ; x2=x(:,site2)
-	
+        site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
+        site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
+        x1(:)=x(:,site1) ; x2=x(:,site2)
+
 		i=abs(x2(1)-x1(1)) ; !!!; i=min(i,N(1)-i)
 		k=abs(x2(2)-x1(2)) ; !!! k=min(k,N(2)-k)
 
@@ -1848,8 +1846,8 @@
         !AFM-type check
         !this_ud=( (-1)**i + 1 ) /2
 
-	g_ud(i,k)=g_ud(i,k)+this_ud
-	z_ud(i,k)=z_ud(i,k)+1.d0
+    g_ud(site1, site2)=g_ud(site1, site2)+this_ud
+    z_ud(site1, site2)=z_ud(site1, site2)+1.d0
 
         gss = gss + (-1)**(i+k)*this_ud/2.d0    ! 1/4 since Sz=(n_up-n_down)/2 & 2 due to up-up + down-down
         gss0 = gss0 + (-1)**(i+k)*this_ud/2.d0
@@ -1864,8 +1862,8 @@
 	x2 = x(:,site2)
 
 	if(site1==site2)then
-	        this_uu = g_uu0/2.d0   ! just n_{up}
-		i=0 ; k=0 
+        this_uu = g_uu0/2.d0   ! just n_{up}
+        i=0 ; k=0 
 	else
        i=abs(x2(1)-x1(1))  !!!; i=min(i,N(1)-i)
        k=abs(x2(2)-x1(2)) !!! ; k=min(k,N(2)-k)
@@ -1912,10 +1910,10 @@
         !AFM-type check
         !this_uu=( (-1)**i + 1 ) /2
 
-	g_uu(i,k)=g_uu(i,k)  +this_uu
-	z_uu(i,k)=z_uu(i,k)+1.d0
-	gss = gss + (-1)**(i+k)*this_uu/2.d0     ! 1/4 since Sz=(n_up-n_down)/2 & 2 due to up-up + down-down
-        gss0 = gss0 + (-1)**(i+k)*this_uu/2.d0
+    g_uu(site1, site2)=g_uu(site1, site2) + this_uu
+    z_uu(site1, site2)=z_uu(site1, site2)+1.d0
+    gss = gss + (-1)**(i+k)*this_uu/2.d0     ! 1/4 since Sz=(n_up-n_down)/2 & 2 due to up-up + down-down
+    gss0 = gss0 + (-1)**(i+k)*this_uu/2.d0
  
 
 	end subroutine dance_dance_3
@@ -2267,8 +2265,8 @@
 
         fname='g____ud'//trim(fnamesuffix)//'.dat'
 	open(1,file=trim(adjustl(fname)))
-	do i=0,N(1)-1
-	do j=0,N(2)-1
+	do i=1,Nsite
+	do j=1,Nsite
 	   write(1,*)i,j, g_uu(i,j)/z_uu(i,j)  ,g_ud(i,j)/z_ud(i,j)
 	enddo
 	enddo
@@ -2276,8 +2274,8 @@
 
         fname='g____uu'//trim(fnamesuffix)//'.dat'
 	open(1,file=trim(adjustl(fname)))
-	do i=0,N(1)-1
-	do j=0,N(2)-1
+	do i=1,Nsite
+	do j=1,Nsite
 	   write(1,*)i,j, g_uu(i,j)/z_uu(i,j) ! ,g_ud(i,j,k)/z_ud(i,j,k)
 	enddo
 	enddo
@@ -2286,8 +2284,8 @@
         fname='g____szsz'//trim(fnamesuffix)//'.dat'
 	open(1,file=trim(adjustl(fname)))
 	summ =0.d0
-	do i=0,N(1)-1
-	do j=0,N(2)-1
+	do i=1,Nsite
+	do j=1,Nsite
 	   dummy = 2.d0*g_uu(i,j)/z_uu(i,j) + 2.d0*g_ud(i,j)/z_ud(i,j)  -1.d0 
            dummy = dummy / 4.d0 	
            write(1,*)i,j, dummy
@@ -2409,10 +2407,10 @@
 	  write(1,*)PEKE
 	  write(1,*)PEKE_stat(1:b_n)
 	  write(1,*)'------'
-	  write(1,*)g_uu(0:N(1)-1, 0:N(2)-1)
-	  write(1,*)z_uu(0:N(1)-1, 0:N(2)-1)
-	  write(1,*)g_ud(0:N(1)-1, 0:N(2)-1)
-	  write(1,*)z_ud(0:N(1)-1, 0:N(2)-1)
+	  write(1,*)g_uu(1:Nsite, 1:Nsite)
+	  write(1,*)z_uu(1:Nsite, 1:Nsite)
+	  write(1,*)g_ud(1:Nsite, 1:Nsite)
+	  write(1,*)z_ud(1:Nsite, 1:Nsite)
 	  write(1,*)gss
 	  write(1,*)gss_stat(1:b_n)
           write(1,*)nn_szsz
@@ -2462,10 +2460,10 @@
 	  read(1,*)PEKE
 	  read(1,*)PEKE_stat(1:b_n)
 	  read(1,*)cvoid
-	  read(1,*)g_uu(0:N(1)-1, 0:N(2)-1)
-	  read(1,*)z_uu(0:N(1)-1, 0:N(2)-1)
-	  read(1,*)g_ud(0:N(1)-1, 0:N(2)-1)
-	  read(1,*)z_ud(0:N(1)-1, 0:N(2)-1)
+	  read(1,*)g_uu(1:Nsite, 1:Nsite)
+	  read(1,*)z_uu(1:Nsite, 1:Nsite)
+	  read(1,*)g_ud(1:Nsite, 1:Nsite)
+	  read(1,*)z_ud(1:Nsite, 1:Nsite)
 	  read(1,*)gss
 	  read(1,*)gss_stat(1:b_n)
           read(1,*)nn_szsz
@@ -2500,7 +2498,7 @@
 	PE = 0.d0; PE_stat=0.d0
 	KE = 0.d0; KE_stat=0.d0
 	ndens = 0.d0; ndens_stat=0.d0
-        nn_szsz=0.d0; nn_szsz_stat=0.d0
+    nn_szsz=0.d0; nn_szsz_stat=0.d0
 	g_uu=0.d0; g_ud=0.d0
 	z_uu=0.d0; z_ud=0.d0
 	PE_2 = 0.d0; PE_2_stat = 0.d0
