@@ -332,6 +332,10 @@
         N2(i)=N(i)/2
     end do
 
+!--- set up the lattice
+    CALL ASSA
+
+
 	read(1,*) ans1  ! 0 if new configuration, 1 if old one
 	read(1,*) ans2  ! 0 if new statistics,    1 if old one
 	read(1,*) ans3  ! 0 if new rndm() seed, 1 if read one
@@ -407,9 +411,6 @@
 
 
 !---------- DONE reading, allocating memory:
-
-!--- Lattice
-	CALL ASSA
 
 !--- Configuration
 	allocate( nkink(1:Nsite), kname(nkink_m,1:Nsite) )  ! site data
@@ -591,9 +592,7 @@
 	   call mystop
 	endif
 !---------- end check
-
-	site=Nsite*rndm()+1.d0
-	if(site>Nsite)site=Nsite    ! select a site to play on
+    site = random_site()     ! select a site to play on
 	tnew = beta*rndm()                    ! select tau		
 
 !------------- determinant
@@ -825,8 +824,7 @@
 	endif
 !---------- end check
 
-	site=Nsite*rndm()+1.d0
-	if(site>Nsite)site=Nsite    ! select a site to play on
+    site = random_site()    ! select a site to play on
 	tnew = beta*rndm()                    ! select tau
 	tnew2 = beta*rndm()             
 
@@ -991,7 +989,7 @@
 	if(nmnm<2)return    ! nothing to drop yet :)
 
 ! play a site
-	site = Nsite*rndm()+1.d0; if(site>Nsite)site=Nsite
+    site = random_site()
 	nk = nkink(site)
 	if(nk<2)return              ! nothing to drop yet
 
@@ -1159,13 +1157,10 @@
 	   call mystop
 	endif
 !---------- end check
-	
-	site=Nsite*rndm()+1.d0
-	if(site>Nsite)site=Nsite    ! select a site to play on
+	site = random_site()       ! select a site to play on
 	tnew = beta*rndm()                    ! select tau	
 
-	site2=Nsite*rndm()+1.d0
-	if(site2>Nsite)site2=Nsite
+    site2 = random_site()
 	tnew2 = beta*rndm()             
 
 !------------- determinant   
@@ -1564,7 +1559,7 @@
 	integer :: site, j, vova, sv
 
 ! select where to insert a kink
-	site=Nsite*rndm()+1.d0; if(site>Nsite)site=Nsite
+    site = random_site()
 	tn=beta*rndm()
 	
 !------------- determinant
@@ -1604,10 +1599,10 @@
 	integer :: k, i1,i2
 
 ! select where to insert the kinks
-	site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite
+    site1 = random_site()
 	x1(:)=x(:,site1); t1=beta*rndm()
 	
-	site2=Nsite*rndm()+1.d0; if(site2>Nsite)site2=Nsite
+    site2 = random_site()
 	x2(:)=x(:,site2); t2=beta*rndm()
 	
 !------------- determinant
@@ -1658,7 +1653,7 @@
 !
 !  This estmator is for the tight-binding dispersion ONLY (n.n. sites)
 !
-    site1=Nsite*rndm()+1.d0; if(site1>Nsite)site1=Nsite; 
+    site1 = random_site()
     numn = num_neighb(site1)
 
 112 continue
@@ -1807,7 +1802,7 @@
 	  x1(:)=x(:,site1)  	  ! get its coordinate for determinant calculation
 	  t0 = ktau(name)      	  ! Let the measuring time be the same as that on 'name' -- for easier testing
 
-	  site2=floor(Nsite*rndm())+1
+      site2 = random_site()
 	  x2(:)=x(:,site2)
 
 ! **** Get the second determinant ************************
@@ -1832,8 +1827,8 @@
 		this_ud = nmnm*det2/(U*beta*Nsite)  + alpha*alpha
  
 	else
-        site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
-        site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
+        site1 = random_site()
+        site2 = random_site()
         x1(:)=x(:,site1) ; x2=x(:,site2)
 
 		i=abs(x2(1)-x1(1)) ; !!!; i=min(i,N(1)-i)
@@ -1855,10 +1850,10 @@
 !*************************************** g_{up,up} : add two extra (1/2)-kinks
 
 	t1=beta*rndm()
-	site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
+    site1 = random_site()
 	x1 = x(:,site1)
 
-	site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
+    site2 = random_site()
 	x2 = x(:,site2)
 
 	if(site1==site2)then
@@ -1972,8 +1967,7 @@
 		this_ud = nmnm*det2/(U*beta*Nsite)  + alpha*alpha
  
 	else
-	        site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
-       	        !site2=Nsite*rndm()+1; if(site2>Nsite)site2=Nsite
+            site1 = random_site()
 
 114         continue
             numn = num_neighb(site1)
@@ -1989,7 +1983,7 @@
 !*************************************** g_{up,up} : add two extra (1/2)-kinks
 
 	t1=beta*rndm()
-	site1=Nsite*rndm()+1; if(site1>Nsite)site1=Nsite
+    site1 = random_site()
 	x1 = x(:,site1)
 
     ! select a neighbor across a bond
@@ -2701,6 +2695,18 @@
 	end function recalc_matrix
 
 
+!----------------------
+!---- Pick a site at random
+!----------------------
+    integer function random_site()
+    implicit none
+    integer :: site
+
+    site = Nsite*rndm() + 1
+    if (site > Nsite) site = Nsite
+    random_site = site
+    
+    end function random_site
 
 
 !----------------------
