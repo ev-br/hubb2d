@@ -344,7 +344,7 @@
 
 	read(1,*) U,U_in        ! - U, interaction, & initial for thermalization
 	read(1,*) beta, beta_ini     ! Inverse temperature
-	    bun = beta*U*Nsite  ! Shorthand
+	    bun = beta*U*Nsite_active  ! Shorthand
 	    step_r = bun*bun    ! step for determinant recalculation
 	    beta_fin = beta; 
 		
@@ -990,6 +990,8 @@
 
 ! play a site
     site = random_site()
+    if (.not.is_active(site)) return
+
 	nk = nkink(site)
 	if(nk<2)return              ! nothing to drop yet
 
@@ -1491,7 +1493,7 @@
 	else                  !   Z sector
 
 	i_b = i_b + 1 ; 	Z = Z + un1
-	this_PE = 1.d0*nmnm/beta + alpha*alpha*U*Nsite          ! PE
+	this_PE = 1.d0*nmnm/beta + alpha*alpha*U*Nsite_active          ! PE
 
 	PE = PE + this_PE
 	this_KE = diag_KE()
@@ -1824,7 +1826,7 @@
         i=abs(x2(1)-x1(1)) ; !!! i=min(i,N(1)-i)
         k=abs(x2(2)-x1(2)) ; !!! k=min(k,N(2)-k)
 	    
-		this_ud = nmnm*det2/(U*beta*Nsite)  + alpha*alpha
+		this_ud = nmnm*det2/(U*beta*Nsite_active)  + alpha*alpha
  
 	else
         site1 = random_site()
@@ -1964,7 +1966,7 @@
 	    det2 = det_rc(pm,lda,matr,r,m_v,c,m_z,m_w)
 !********************************************************
 
-		this_ud = nmnm*det2/(U*beta*Nsite)  + alpha*alpha
+		this_ud = nmnm*det2/(U*beta*Nsite_active)  + alpha*alpha
  
 	else
             site1 = random_site()
@@ -2096,6 +2098,7 @@
 	real*8 :: PE_2_av, PE_2_err, PEKE_av, PEKE_err, dbl, dbl_err,nn_av,nn_err
 	real*8 :: gss_av, gss_err
 	real*8 :: dens_av, dens_err,dummy, summ
+    real*8 :: denom1, denom2
 
 	logical :: lastone
 
@@ -2251,7 +2254,8 @@
 	open(1,file=trim(adjustl(fname)))
 	do i=0,N(1)/2
 	do j=0,N(2)/2
-	   write(1,*) i,j, gf_r(i,j,0)/zgf(i,j,0) ,gf_i(i,j,0)/zgf(i,j,0)
+       denom1 = zgf(i,j,0); if (denom1 == 0) denom1 = 1d100
+	   write(1,*) i,j, gf_r(i,j,0)/denom1 ,gf_i(i,j,0)/denom1
 	enddo
 	enddo
 	close(1)
@@ -2261,7 +2265,9 @@
 	open(1,file=trim(adjustl(fname)))
 	do i=1,Nsite
 	do j=1,Nsite
-	   write(1,*)i,j, g_uu(i,j)/z_uu(i,j)  ,g_ud(i,j)/z_ud(i,j)
+       denom1 = z_uu(i,j); if (denom1 == 0) denom1 = 1d100
+       denom2 = z_ud(i,j); if (denom2 == 0) denom2 = 1d100
+	   write(1,*)i,j, g_uu(i,j)/denom1  ,g_ud(i,j)/denom2
 	enddo
 	enddo
 	close(1)
@@ -2270,7 +2276,8 @@
 	open(1,file=trim(adjustl(fname)))
 	do i=1,Nsite
 	do j=1,Nsite
-	   write(1,*)i,j, g_uu(i,j)/z_uu(i,j) ! ,g_ud(i,j,k)/z_ud(i,j,k)
+       denom1 = z_uu(i,j); if (denom1 == 0) denom1 = 1d100
+	   write(1,*)i,j, g_uu(i,j)/denom1 ! ,g_ud(i,j,k)/z_ud(i,j,k)
 	enddo
 	enddo
 	close(1)
@@ -2280,9 +2287,11 @@
 	summ =0.d0
 	do i=1,Nsite
 	do j=1,Nsite
-	   dummy = 2.d0*g_uu(i,j)/z_uu(i,j) + 2.d0*g_ud(i,j)/z_ud(i,j)  -1.d0 
-           dummy = dummy / 4.d0 	
-           write(1,*)i,j, dummy
+        denom1 = z_uu(i,j); if (denom1 == 0) denom1 = 1d100
+        denom2 = z_ud(i,j); if (denom2 == 0) denom2 = 1d100
+        dummy = 2.d0*g_uu(i,j)/denom1 + 2.d0*g_ud(i,j)/denom2  -1.d0 
+        dummy = dummy / 4.d0 	
+        write(1,*)i,j, dummy
 	enddo
 	enddo
 	close(1)
@@ -2696,14 +2705,17 @@
 
 
 !----------------------
-!---- Pick a site at random
+!---- Pick an active site at random
 !----------------------
     integer function random_site()
     implicit none
     integer :: site
 
+321 continue
     site = Nsite*rndm() + 1
     if (site > Nsite) site = Nsite
+    if (.not.is_active(site))goto 321
+
     random_site = site
     
     end function random_site
@@ -2838,7 +2850,7 @@
         close(OUT_UNIT)
         beta = beta_fin
         bmt = beta/mtau ; bmt1 = 1.d0/bmt 
-        bun = beta*U*Nsite
+        bun = beta*U*Nsite_active
         return
     endif
 
@@ -2851,7 +2863,7 @@
    	       beta = beta_fin + (beta_ini-beta_fin)*exp(-1.d0/pex)
 	  endif
 	  bmt = beta/mtau ; bmt1 = 1.d0/bmt 
-	  bun = beta*U*Nsite	  
+	  bun = beta*U*Nsite_active  
 
 	  call tabulate(beta, mtau, mu)                     ! GFs
 

@@ -4,13 +4,14 @@
     module lattice
     implicit none
 
-    public :: d, dd, N, N2, Nsite, Nbond, ass, back, x, ASSA, distance_v, num_neighb
+    public :: d, dd, N, N2, Nsite, Nsite_active, Nbond, ass, back, x, ASSA, distance_v, num_neighb, is_active
 
     private
 
     integer :: d, dd
     integer, allocatable :: N(:), N2(:)
     integer :: Nsite      ! Total number of sites
+    integer :: Nsite_active    ! Total number of 'active' sites (where U != 0)
     integer :: Nbond      ! Total number of bonds
 
 !------------------------------------------------------
@@ -97,6 +98,8 @@
          END DO
       END DO
       
+      Nsite_active = Nsite
+
       end subroutine ASSA
 
 
@@ -128,5 +131,19 @@
     num_neighb = dd
 
     end function num_neighb
+
+
+
+!---------------------------------------------
+!--- Check if a given site is 'active' (i.e. U != 0)
+!---------------------------------------------
+    logical function is_active(site)
+    implicit none
+    integer, intent(in) :: site
+
+    is_active = .true.
+
+    end function is_active
+
 
     end module lattice
