@@ -143,6 +143,14 @@
     integer :: num_neighb
     integer, intent(in) :: site
 
+!!! 
+!!! This should be kept as is --- even though the # of neighbors of edge sites
+!!! is not 2d --- because the client MC code assumes that num_neighb(site)*rndm()
+!!! can generate a direction to an arbitrary neighbor.
+!!! The correct check for an edge of the system is `ass(dir, site) == -1`.
+!!! If you *really* need the correct number of neighbors, use
+!!! the nneighb array (or best encapsulate it into a function call)
+!!! 
     num_neighb = dd
 
     end function num_neighb
