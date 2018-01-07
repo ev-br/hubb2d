@@ -5,6 +5,11 @@ LIBS = -llapack -lblas
 FILES = det_n2___.f _rndm_mumbers.f
 MAINFILE = mf_cmd_phi_gf_oct21_2013_2D.f
 
+circle: EXEFNAME = hub_gf_2d_run_circle
+circle: $(FILES)
+	$(FF) $(FFLAGS) $(FILES) lattice_circle.f greenfun_pbc_ED.f $(MAINFILE) -o $(EXEFNAME) $(LIBS)
+	ls -l $(EXEFNAME)
+
 obc: EXEFNAME = hub_gf_2d_run_obc
 obc: $(FILES)
 	$(FF) $(FFLAGS) $(FILES) lattice_obc.f greenfun_pbc_ED.f $(MAINFILE) -o $(EXEFNAME) $(LIBS)

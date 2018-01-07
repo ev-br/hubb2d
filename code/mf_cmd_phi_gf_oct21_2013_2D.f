@@ -535,6 +535,8 @@
 !------------- recalculate if necessary -------------
 	   if( acpt ) then
 
+        call check_cnf
+
 ! det. distribution
             i = floor(log10(abs(det)))
 	      if(abs(i)<det_distr_max) det_distr(i) = det_distr(i)+1.d0
@@ -1449,6 +1451,15 @@
 		   call mystop
 		endif
 	   enddo
+
+    if(.not.is_active(site))then
+        if (nkink(site) /= 0)then
+            print*, 'site = ', site, ' is not active, but nk = ', nkink(site)
+            print*, 'step = ', step, status
+            call mystop 
+        endif
+    endif
+
 	enddo
 
 	end subroutine check_cnf
@@ -2287,10 +2298,12 @@
 	summ =0.d0
 	do i=1,Nsite
 	do j=1,Nsite
-        denom1 = z_uu(i,j); if (denom1 == 0) denom1 = 1d100
-        denom2 = z_ud(i,j); if (denom2 == 0) denom2 = 1d100
-        dummy = 2.d0*g_uu(i,j)/denom1 + 2.d0*g_ud(i,j)/denom2  -1.d0 
-        dummy = dummy / 4.d0 	
+        if((z_uu(i,j)==0) .and.(z_ud(i,j)==0))then
+            dummy = 0
+        else
+            dummy = 2.d0*g_uu(i,j)/z_uu(i,j) + 2.d0*g_ud(i,j)/z_ud(i,j) - 1.d0 
+            dummy = dummy / 4.d0
+        endif
         write(1,*)i,j, dummy
 	enddo
 	enddo
