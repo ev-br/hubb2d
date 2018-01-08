@@ -1959,6 +1959,7 @@
       dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
       site2=ass(dir,site1)
       if(site2 < 0) goto 113
+      if(.not.is_active(site2))goto 113
       x2(:)=x(:,site2)
 
 ! **** Get the second determinant ************************
@@ -1987,6 +1988,7 @@
             dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
             site2=ass(dir,site1)
             if(site2 < 0) goto 114
+            if(.not.is_active(site2)) goto 114
 
             this_ud = alpha*alpha
 
@@ -2005,6 +2007,7 @@
     dir = numn*rndm()+1.d0; if(dir>numn)dir=numn
     site2=ass(dir,site1)
     if(site2 < 0)goto 111
+    if(.not.is_active(site2)) goto 111
     x2 = x(:,site2)
 
 	if(site1==site2)then
